@@ -4,16 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "bun --bun next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "bun next build",
+    "start": "bun next start",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "lint": "eslint",
-    "test:integration": "bun --env-file=.env.local run tests/integration/action-errors/runner.ts",
     "doctor": "npx react-doctor@latest",
-    "auth:generate": "bun run scripts/auth-generate.ts"
+    "auth:generate": "npx @better-auth/cli@latest generate --config ./lib/auth/auth.ts --output ./db/schema/new-auth-schema.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

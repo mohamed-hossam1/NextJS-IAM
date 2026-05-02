@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import type { Logger } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-
+import { admin } from "better-auth/plugins";
 import { db } from "@/db";
 import { sendEmailVerificationEmail } from "../emails/verification-email";
 import { sendPasswordResetEmail } from "../emails/password-reset-email";
@@ -48,6 +48,11 @@ async function bestEffortEmail(
     });
   }
 }
+
+export const ROLE = {
+  USER: "user",
+  ADMIN: "admin",
+};
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -124,7 +129,12 @@ export const auth = betterAuth({
     },
   },
 
-  plugins: [nextCookies()],
+  plugins: [
+    admin({
+      defaultRole: ROLE.USER,
+    }),
+    nextCookies(),
+  ],
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

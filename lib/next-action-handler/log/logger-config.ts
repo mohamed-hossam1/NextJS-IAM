@@ -13,17 +13,13 @@ export const ERROR_LOG_LEVEL: Record<ErrorCode, "warn" | "error"> = {
   INTERNAL_SERVER_ERROR: "error",
 };
 
-const logPrettyEnv = process.env.LOG_PRETTY?.toLowerCase();
-const isDevelopment = process.env.NODE_ENV === "development";
-const usePretty =
-  logPrettyEnv === "true" ||
-  logPrettyEnv === "1" ||
-  (isDevelopment && logPrettyEnv !== "false") ||
-  (typeof process !== "undefined" && process.stdout?.isTTY && logPrettyEnv !== "false");
+const hasProcess = typeof process !== "undefined";
+const isDevelopment = hasProcess ? process.env.NODE_ENV === "development" : false;
+const usePretty = isDevelopment;
 
 const baseOptions: pino.LoggerOptions = {
   base: null,
-  level: process.env.LOG_LEVEL ?? "info",
+  level: (hasProcess ? process.env.LOG_LEVEL : undefined) ?? "info",
   timestamp: pino.stdTimeFunctions.isoTime,
   serializers: {
     err: pino.stdSerializers.err,

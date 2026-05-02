@@ -1,6 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth/auth";
+import { auth, ROLE } from "@/lib/auth/auth";
 import { UnauthorizedError } from "@/lib/next-action-handler/error/errors";
 
 export type AuthUser = {
@@ -29,6 +29,7 @@ export type PublicUser = {
   image: string | null;
   createdAt: string;
   updatedAt: string;
+  role: string | null;
 };
 
 export type AuthenticatedContext = {
@@ -66,6 +67,7 @@ function toPublicUser(u: RawSession["user"]): PublicUser {
     image: u.image ?? null,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
+    role: u.role ?? null,
   };
 }
 
@@ -102,8 +104,17 @@ export async function requireSession(): Promise<AuthenticatedContext> {
 // For action handler internal use (create-action.ts)
 // ─────────────────────────────────────────────────────────────
 
+const UNAUTHORIZED_MESSAGE = "You are not authorized to access this page";
+
 export async function requireUser(): Promise<AuthUser> {
   const raw = await getRawSession();
-  if (!raw) throw new UnauthorizedError();
+  if (!raw) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
   return { id: raw.user.id, email: raw.user.email };
+}
+
+export async function requireAdmin(): Promise<AuthenticatedContext> {
+  const ctx = await getSession();
+  if (!ctx) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
+  if (ctx.user.role !== ROLE.ADMIN) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
+  return ctx;
 }

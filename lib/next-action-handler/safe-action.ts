@@ -11,7 +11,7 @@ import { logActionError, logActionExecution } from "./log/logger";
 
 import { normalizeError } from "./error/normalize-error";
 import { InternalServerError } from "./error/errors";
-import { requireUser } from "../auth/auth-helpers";
+import { requireAdmin, requireUser } from "../auth/auth-helpers";
 
 const OUTPUT_VALIDATION_SERVER_ERROR_MESSAGE =
   "Unexpected response. Please try again.";
@@ -80,5 +80,10 @@ export const actionClient = createSafeActionClient({
 
 export const authedActionClient = actionClient.use(async ({ next }) => {
   const user = await requireUser();
+  return next({ ctx: { user } });
+});
+
+export const adminActionClient = actionClient.use(async ({ next }) => {
+  const user = await requireAdmin();
   return next({ ctx: { user } });
 });
