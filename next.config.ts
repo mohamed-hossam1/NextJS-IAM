@@ -16,6 +16,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   poweredByHeader: false,
   serverExternalPackages: ["pino", "pino-pretty"],
 

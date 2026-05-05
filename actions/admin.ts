@@ -1,9 +1,11 @@
 "use server";
 
 import { asc, count, desc, ilike, type SQL } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { db } from "@/db";
 import { user as userTable } from "@/db/schema/auth-schema";
+import { CACHE_TAGS } from "@/lib/cache/tags";
 import { adminActionClient } from "@/lib/next-action-handler/safe-action";
 import { DatabaseError } from "@/lib/next-action-handler/error/errors";
 import {
@@ -76,42 +78,40 @@ function getSearchWhere(query: AdminListUsersQuery): SQL | undefined {
   );
 }
 
-export type {
-  AdminListedUser,
-  AdminListUsersInput,
-  AdminListUsersQuery,
-  AdminUserSearchField,
-  AdminUserSearchOperator,
-  AdminUserSortDirection,
-  AdminUserSortField,
-} from "@/lib/zodSchema/admin-schema";
+async function fetchCachedUsers(input: AdminListUsersQuery) {
+  "use cache";
+  cacheTag(CACHE_TAGS.users);
+  cacheLife("minutes");
+
+  const where = getSearchWhere(input);
+  const sortColumn = getSortColumn(input.sortBy);
+  const sort = input.sortDirection === "desc" ? desc : asc;
+
+  const [users, totalResult] = await Promise.all([
+    db
+      .select()
+      .from(userTable)
+      .where(where)
+      .orderBy(sort(sortColumn))
+      .limit(input.limit)
+      .offset(input.offset),
+    db.select({ total: count() }).from(userTable).where(where),
+  ]);
+
+  return {
+    users: users.map(toAdminListedUser),
+    total: totalResult[0]?.total ?? 0,
+    limit: input.limit,
+    offset: input.offset,
+  };
+}
 
 export const listUsers = adminActionClient
   .metadata({ actionName: "admin.listUsers" })
   .inputSchema(AdminListUsersInputSchema)
   .action(async ({ parsedInput }) => {
     try {
-      const where = getSearchWhere(parsedInput);
-      const sortColumn = getSortColumn(parsedInput.sortBy);
-      const sort = parsedInput.sortDirection === "desc" ? desc : asc;
-
-      const [users, totalResult] = await Promise.all([
-        db
-          .select()
-          .from(userTable)
-          .where(where)
-          .orderBy(sort(sortColumn))
-          .limit(parsedInput.limit)
-          .offset(parsedInput.offset),
-        db.select({ total: count() }).from(userTable).where(where),
-      ]);
-
-      return {
-        users: users.map(toAdminListedUser),
-        total: totalResult[0]?.total ?? 0,
-        limit: parsedInput.limit,
-        offset: parsedInput.offset,
-      };
+      return await fetchCachedUsers(parsedInput);
     } catch (error) {
       throw new DatabaseError("Failed to load users.", error);
     }

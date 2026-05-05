@@ -21,6 +21,7 @@ import {
 
 import { fromBetterAuthError } from "@/lib/next-action-handler/error/better-auth-error";
 
+import { revalidateUserCache, revalidateUsersCache } from "@/lib/cache/revalidate";
 import { NotFoundError } from "@/lib/next-action-handler/error/errors";
 
 import {
@@ -39,15 +40,19 @@ export const updateProfile = authedActionClient
     actionName: "profile:updateProfile",
   })
   .inputSchema(UpdateProfileSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     try {
-      return await auth.api.updateUser({
+      const result = await auth.api.updateUser({
         headers: await headers(),
 
         body: {
           name: parsedInput.name,
         },
       });
+
+      await revalidateUserCache(ctx.user.id);
+
+      return result;
     } catch (error) {
       throw fromBetterAuthError(error);
     }
@@ -176,12 +181,16 @@ export const deleteAccount = authedActionClient
   .metadata({
     actionName: "profile:deleteAccount",
   })
-  .action(async () => {
+  .action(async ({ ctx }) => {
     try {
+      const userId = ctx.user.id;
+
       await auth.api.deleteUser({
         headers: await headers(),
         body: {},
       });
+
+      await revalidateUsersCache();
     } catch (error) {
       throw fromBetterAuthError(error);
     }

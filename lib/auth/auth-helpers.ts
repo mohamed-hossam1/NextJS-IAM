@@ -100,9 +100,6 @@ export async function requireSession(): Promise<AuthenticatedContext> {
   return ctx;
 }
 
-// ─────────────────────────────────────────────────────────────
-// For action handler internal use (create-action.ts)
-// ─────────────────────────────────────────────────────────────
 
 const UNAUTHORIZED_MESSAGE = "You are not authorized to access this page";
 
@@ -112,7 +109,15 @@ export async function requireUser(): Promise<AuthUser> {
   return { id: raw.user.id, email: raw.user.email };
 }
 
-export async function requireAdmin(): Promise<AuthenticatedContext> {
+export async function requireAdmin(): Promise<AuthUser> {
+  const raw = await getRawSession();
+  if (!raw) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
+  if (raw.user.role !== ROLE.ADMIN) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
+  return { id: raw.user.id, email: raw.user.email };
+}
+
+
+export async function requireAdminSession(): Promise<AuthenticatedContext> {
   const ctx = await getSession();
   if (!ctx) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);
   if (ctx.user.role !== ROLE.ADMIN) throw new UnauthorizedError(UNAUTHORIZED_MESSAGE);

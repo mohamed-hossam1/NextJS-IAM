@@ -2,15 +2,17 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { listUsers } from "@/actions/admin";
+import { parseAdminUsersQuery } from "@/lib/query";
 
 import SessionActions from "@/components/SessionActions";
+import { SuspenseOnSearchParams } from "@/components/SuspenseOnSearchParams";
+import { AdminUsersTableSkeleton } from "@/components/skeletons/AdminUsersTableSkeleton";
 import { SessionActionsSkeleton } from "@/components/skeletons/SessionActionsSkeleton";
 
 import { ErrorBanner } from "@/components/users-admin/error-banner";
 import { Pagination } from "@/components/users-admin/pagination";
 import { SearchForm } from "@/components/users-admin/search-form";
 import { UsersTable } from "@/components/users-admin/users-table";
-import { parseAdminUsersQuery } from "@/lib/query";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -22,7 +24,40 @@ export const metadata: Metadata = {
   title: "Admin Users",
 };
 
-export default async function AdminPage({ searchParams }: AdminUsersPageProps) {
+async function RecordsCount({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const query = parseAdminUsersQuery(await searchParams);
+
+  const result = await listUsers({
+    searchValue: query.searchValue,
+    searchField: query.searchField,
+    searchOperator: query.searchOperator,
+    limit: query.limit,
+    offset: query.offset,
+    sortBy: query.sortBy,
+    sortDirection: query.sortDirection,
+  });
+
+  const serverError = result?.serverError;
+  const total = result?.data?.total ?? 0;
+
+  if (serverError) return null;
+
+  return (
+    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      {total.toLocaleString()} records
+    </p>
+  );
+}
+
+async function AdminUsersList({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const query = parseAdminUsersQuery(await searchParams);
 
   const result = await listUsers({
@@ -38,6 +73,25 @@ export default async function AdminPage({ searchParams }: AdminUsersPageProps) {
   const serverError = result?.serverError;
   const users = result?.data?.users ?? [];
   const total = result?.data?.total ?? 0;
+
+  if (serverError) {
+    return <ErrorBanner message={serverError.message} />;
+  }
+
+  return (
+    <>
+      <UsersTable users={users} query={query} />
+      <Pagination
+        query={query}
+        total={total}
+        userCount={users.length}
+      />
+    </>
+  );
+}
+
+export default async function AdminPage({ searchParams }: AdminUsersPageProps) {
+  const query = parseAdminUsersQuery(await searchParams);
 
   return (
     <div className="min-h-screen w-full bg-background">
@@ -60,21 +114,16 @@ export default async function AdminPage({ searchParams }: AdminUsersPageProps) {
               Review account access, verification, and lifecycle details.
             </p>
           </div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            {total.toLocaleString()} records
-          </p>
+          <Suspense fallback={<div className="h-4 w-20 animate-pulse bg-muted/60" />}>
+            <RecordsCount searchParams={searchParams} />
+          </Suspense>
         </div>
 
         <SearchForm query={query} />
 
-        {serverError ? (
-          <ErrorBanner message={serverError.message} />
-        ) : (
-          <>
-            <UsersTable users={users} query={query} />
-            <Pagination query={query} total={total} userCount={users.length} />
-          </>
-        )}
+        <SuspenseOnSearchParams fallback={<AdminUsersTableSkeleton />}>
+          <AdminUsersList searchParams={searchParams} />
+        </SuspenseOnSearchParams>
       </main>
     </div>
   );

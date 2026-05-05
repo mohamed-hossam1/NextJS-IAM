@@ -19,6 +19,7 @@ import {
 import { fromBetterAuthError } from "@/lib/next-action-handler/error/better-auth-error";
 import { logError } from "@/lib/next-action-handler/log/logger";
 
+import { revalidateUsersCache } from "@/lib/cache/revalidate";
 import { isValidateEmail } from "@/lib/auth/email-validation";
 import {
   ForgotPasswordSchema,
@@ -56,7 +57,7 @@ export const register = actionClient
     }
 
     try {
-      return await auth.api.signUpEmail({
+      const result = await auth.api.signUpEmail({
         headers: await headers(),
 
         body: {
@@ -66,6 +67,10 @@ export const register = actionClient
           callbackURL: ROUTES.DASHBOARD,
         },
       });
+
+      await revalidateUsersCache();
+
+      return result;
     } catch (error) {
       if (error instanceof Error && /already/i.test(error.message)) {
         throw new BadRequestError(
