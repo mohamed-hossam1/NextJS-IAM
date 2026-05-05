@@ -100,7 +100,7 @@ async function fetchCachedUsers(input: AdminListUsersQuery) {
 
   return {
     users: users.map(toAdminListedUser),
-    total: totalResult[0]?.total ?? 0,
+    total: Number(totalResult[0]?.total ?? 0),
     limit: input.limit,
     offset: input.offset,
   };

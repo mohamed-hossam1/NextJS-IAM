@@ -18,14 +18,20 @@ function stripTrailingSlash(url: string): string {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
-const NEXT_PUBLIC_APP_URL = stripTrailingSlash(
-  readRequired(
-    "NEXT_PUBLIC_APP_URL",
-    process.env.NEXT_PUBLIC_APP_URL ??
-      process.env.NEXT_PUBLIC_BASE_URL ??
-      (isServer ? process.env.BETTER_AUTH_URL : undefined),
-  ),
-);
+let _appUrlCache: string | null = null;
+
+function resolveAppUrl(): string {
+  if (_appUrlCache !== null) return _appUrlCache;
+  _appUrlCache = stripTrailingSlash(
+    readRequired(
+      "NEXT_PUBLIC_APP_URL",
+      process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.NEXT_PUBLIC_BASE_URL ??
+        (isServer ? process.env.BETTER_AUTH_URL : undefined),
+    ),
+  );
+  return _appUrlCache;
+}
 
 let serverEnvCache: {
   DATABASE_URL: string;
@@ -56,7 +62,7 @@ function getServerEnv() {
       process.env.BETTER_AUTH_SECRET,
     ),
     BETTER_AUTH_URL: stripTrailingSlash(
-      process.env.BETTER_AUTH_URL?.trim() || NEXT_PUBLIC_APP_URL,
+      process.env.BETTER_AUTH_URL?.trim() || resolveAppUrl(),
     ),
     GOOGLE_CLIENT_ID: readRequired(
       "GOOGLE_CLIENT_ID",
@@ -92,7 +98,9 @@ function getServerEnv() {
 }
 
 export const publicEnv = {
-  appUrl: NEXT_PUBLIC_APP_URL,
+  get appUrl() {
+    return resolveAppUrl();
+  },
 } as const;
 
 export { getServerEnv as serverEnv };

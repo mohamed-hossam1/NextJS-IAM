@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCookieCache } from "better-auth/cookies";
 
 import { ROUTES } from "@/constants/routes";
-import { auth } from "@/lib/auth/auth";
+import { auth, ROLE } from "@/lib/auth/auth";
 
 
 const SESSION_COOKIE_NAMES = [
@@ -21,7 +21,7 @@ const AUTH_PREFIXES = [
 ] as const;
 
 const REAUTH_PARAM = "reauth";
-const ADMIN_ROLE = "admin";
+const ADMIN_ROLE = ROLE.ADMIN;
 
 function isUnder(pathname: string, prefixes: readonly string[]): boolean {
   for (const prefix of prefixes) {

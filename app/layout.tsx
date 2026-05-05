@@ -32,14 +32,16 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(publicEnv.appUrl),
-  title: {
-    template: "%s | mocode",
-    default: "mocode",
-  },
-  description: "",
-};
+export function generateMetadata(): Metadata {
+  return {
+    metadataBase: new URL(publicEnv.appUrl),
+    title: {
+      template: "%s | mocode",
+      default: "mocode",
+    },
+    description: "",
+  };
+}
 
 export default function RootLayout({
   children,
