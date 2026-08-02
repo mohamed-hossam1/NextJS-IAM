@@ -62,8 +62,8 @@ export function ProfileTabPanel({ user }: { user: PublicUser }) {
 
       queryClient.setQueryData<AuthenticatedContext | null>(
         sessionQueryKey,
-        (current) => {
-          if (!current?.session || !current.user) return current;
+        (current: AuthenticatedContext | null | undefined) => {
+          if (!current?.session || !current.user) return current ?? null;
           return { ...current, user: { ...current.user, name: nextName } };
         },
       );

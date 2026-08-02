@@ -1,188 +1,153 @@
 "use server";
 
-import { headers } from "next/headers";
-import { z } from "zod";
-
-import { ROUTES } from "@/constants/routes";
-
-import { auth } from "@/lib/auth/auth";
-
+import z from "zod";
+import { apiClient } from "@/lib/api/client";
+import { actionClient } from "@/lib/next-action-handler/safe-action";
 import {
-  type PublicSession,
-  getSession,
-  requireSession,
-  toPublicSession,
-} from "@/lib/auth/auth-helpers";
-
-import {
-  actionClient,
-  authedActionClient,
-} from "@/lib/next-action-handler/safe-action";
-
-import { fromBetterAuthError } from "@/lib/next-action-handler/error/better-auth-error";
-
-import { NotFoundError } from "@/lib/next-action-handler/error/errors";
-
-import {
-  ChangePasswordSchema,
+  RevokeSessionSchema,
+  SetPasswordSchema,
   UpdateProfileSchema,
 } from "@/lib/zodSchema/profile-schema";
+import type { PublicSession, PublicUser } from "@/types/auth";
 
 export const getCurrentSession = actionClient
-  .metadata({
-    actionName: "profile:getCurrentSession",
-  })
-  .action(() => getSession());
+  .metadata({ actionName: "profile.getCurrentSession" })
+  .action(async () => {
+    try {
+      const user = await apiClient.get<{
+        id: string;
+        email: string;
+        name?: string | null;
+        avatarUrl?: string | null;
+        isVerified?: boolean;
+        createdAt: string;
+        updatedAt: string;
+        hasPassword?: boolean;
+      }>("/users/me");
 
-export const updateProfile = authedActionClient
-  .metadata({
-    actionName: "profile:updateProfile",
-  })
+      if (!user?.id) return null;
+
+      const publicUser: PublicUser = {
+        id: user.id,
+        name: user.name ?? "",
+        email: user.email,
+        emailVerified: Boolean(user.isVerified),
+        image: user.avatarUrl ?? null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        hasPassword: user.hasPassword,
+      };
+
+      const session: PublicSession = {
+        id: user.id,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        expiresAt: "",
+        ipAddress: null,
+        userAgent: null,
+      };
+
+      return { session, user: publicUser };
+    } catch {
+      return null;
+    }
+  });
+
+export const updateProfile = actionClient
+  .metadata({ actionName: "profile.updateProfile" })
   .inputSchema(UpdateProfileSchema)
   .action(async ({ parsedInput }) => {
-    try {
-      return await auth.api.updateUser({
-        headers: await headers(),
-
-        body: {
-          name: parsedInput.name,
-        },
-      });
-    } catch (error) {
-      throw fromBetterAuthError(error);
-    }
+    return await apiClient.patch("/users/me", parsedInput);
   });
 
-export const hasPassword = authedActionClient
-  .metadata({
-    actionName: "profile:hasPassword",
-  })
+export const hasPassword = actionClient
+  .metadata({ actionName: "profile.hasPassword" })
   .action(async () => {
-    try {
-      const accounts = await auth.api.listUserAccounts({
-        headers: await headers(),
-      });
-
-      return accounts.some((account) => account.providerId === "credential");
-    } catch (error) {
-      throw fromBetterAuthError(error);
-    }
+    const user = await apiClient.get<{ hasPassword: boolean }>("/users/me");
+    return user?.hasPassword ?? false;
   });
 
-export const sendCurrentUserPasswordResetEmail = authedActionClient
-  .metadata({
-    actionName: "profile:sendCurrentUserPasswordResetEmail",
-  })
+export const sendCurrentUserPasswordResetEmail = actionClient
+  .metadata({ actionName: "profile.sendCurrentUserPasswordResetEmail" })
   .action(async () => {
-    const { user } = await requireSession();
-
     try {
-      await auth.api.requestPasswordReset({
-        body: {
-          email: user.email,
-          redirectTo: `${ROUTES.RESETPASSWORD}?type=reset`,
-        },
-      });
-    } catch {
-      /**
-       * Prevent email enumeration.
-       * Always return a success response.
-       */
-    }
+      const user = await apiClient.get<{ email: string }>("/users/me");
+      if (user?.email) {
+        await apiClient.post("/auth/forgot-password", { email: user.email });
+      }
+    } catch {}
 
     return {
       message: "If your account is valid, a reset email was sent.",
     };
   });
 
-export const changePassword = authedActionClient
-  .metadata({
-    actionName: "profile:changePassword",
-  })
-  .inputSchema(ChangePasswordSchema)
+const ChangePasswordInputSchema = z.object({
+  oldPassword: z.string().optional(),
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(6),
+});
+
+export const changePassword = actionClient
+  .metadata({ actionName: "profile.changePassword" })
+  .inputSchema(ChangePasswordInputSchema)
   .action(async ({ parsedInput }) => {
-    try {
-      return await auth.api.changePassword({
-        headers: await headers(),
-
-        body: {
-          newPassword: parsedInput.newPassword,
-          currentPassword: parsedInput.currentPassword,
-        },
-      });
-    } catch (error) {
-      throw fromBetterAuthError(error);
-    }
+    const oldPassword = parsedInput.oldPassword ?? parsedInput.currentPassword;
+    return await apiClient.post("/auth/change-password", {
+      oldPassword,
+      newPassword: parsedInput.newPassword,
+    });
   });
 
-export const listSessionsPublic = authedActionClient
-  .metadata({
-    actionName: "profile:listSessionsPublic",
-  })
-  .action(async (): Promise<PublicSession[]> => {
-    try {
-      const sessions = await auth.api.listSessions({
-        headers: await headers(),
-      });
-
-      return sessions.map(toPublicSession);
-    } catch (error) {
-      throw fromBetterAuthError(error);
-    }
-  });
-
-export const revokeSessionById = authedActionClient
-  .metadata({
-    actionName: "profile:revokeSessionById",
-  })
-  .inputSchema(
-    z.object({
-      sessionId: z.string().min(1, {
-        message: "Invalid session id",
-      }),
-    }),
-  )
+export const setPassword = actionClient
+  .metadata({ actionName: "profile.setPassword" })
+  .inputSchema(SetPasswordSchema)
   .action(async ({ parsedInput }) => {
-    try {
-      const sessions = await auth.api.listSessions({
-        headers: await headers(),
-      });
-
-      const targetSession = sessions.find(
-        (session) => session.id === parsedInput.sessionId,
-      );
-
-      if (!targetSession) {
-        throw new NotFoundError("Session not found");
-      }
-
-      return await auth.api.revokeSession({
-        headers: await headers(),
-
-        body: {
-          token: targetSession.token,
-        },
-      });
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-
-      throw fromBetterAuthError(error);
-    }
+    return await apiClient.post("/auth/set-password", parsedInput);
   });
 
-export const deleteAccount = authedActionClient
-  .metadata({
-    actionName: "profile:deleteAccount",
-  })
+export const listSessionsPublic = actionClient
+  .metadata({ actionName: "profile.listSessionsPublic" })
   .action(async () => {
-    try {
-      await auth.api.deleteUser({
-        headers: await headers(),
-        body: {},
-      });
-    } catch (error) {
-      throw fromBetterAuthError(error);
-    }
+    const data = await apiClient.get<{
+      sessions: Array<{
+        id: string;
+        deviceName?: string;
+        ipAddress?: string;
+        userAgent?: string;
+        isCurrent: boolean;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    }>("/auth/sessions");
+
+    return (data?.sessions ?? []).map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      expiresAt: "",
+      ipAddress: s.ipAddress ?? null,
+      userAgent: s.userAgent ?? null,
+    }));
+  });
+
+export const revokeSessionById = actionClient
+  .metadata({ actionName: "profile.revokeSessionById" })
+  .inputSchema(RevokeSessionSchema)
+  .action(async ({ parsedInput }) => {
+    return await apiClient.post("/auth/sessions/revoke", {
+      sessionId: parsedInput.sessionId,
+    });
+  });
+
+export const revokeAllOtherSessions = actionClient
+  .metadata({ actionName: "profile.revokeAllOtherSessions" })
+  .action(async () => {
+    return await apiClient.post("/auth/sessions/revoke-all");
+  });
+
+export const deleteAccount = actionClient
+  .metadata({ actionName: "profile.deleteAccount" })
+  .action(async () => {
+    return await apiClient.delete("/users/me");
   });

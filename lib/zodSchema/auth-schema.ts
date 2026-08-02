@@ -33,7 +33,10 @@ export const ForgotPasswordSchema = z.object({
 
 export const ResetPasswordSchema = z.object({
   token: z.string().min(1, { message: "Reset token is required." }),
-  password: PasswordRule,
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters long." })
+    .max(100, { message: "Password cannot exceed 100 characters." }),
 });
 
 export const VerifyEmailSchema = z.object({

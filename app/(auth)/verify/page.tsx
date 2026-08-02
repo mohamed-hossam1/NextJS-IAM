@@ -5,12 +5,13 @@ import { MailCheck } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { AuthCard } from "@/components/form/auth-card";
 import { buttonVariants } from "@/components/ui/button.variants";
-
 import { ResendVerificationButton } from "@/components/button/ResendVerificationButton";
+import { TokenVerifier } from "@/components/auth/TokenVerifier";
 
 type VerifyPageProps = {
   searchParams: Promise<{
     email?: string | string[] | undefined;
+    token?: string | string[] | undefined;
   }>;
 };
 
@@ -37,11 +38,6 @@ export default function VerifyPage({ searchParams }: VerifyPageProps) {
               </span>
             </div>
 
-            <p className="font-serif-body italic text-sm text-subtitle">
-              Use the link in your inbox to confirm your email address. The
-              verification email can take a minute to arrive.
-            </p>
-
             <Suspense fallback={null}>
               <VerifyActions searchParams={searchParams} />
             </Suspense>
@@ -53,11 +49,21 @@ export default function VerifyPage({ searchParams }: VerifyPageProps) {
 }
 
 async function VerifyActions({ searchParams }: VerifyPageProps) {
-  const { email } = await searchParams;
+  const { email, token } = await searchParams;
   const userEmail = Array.isArray(email) ? email[0] : email;
+  const tokenValue = Array.isArray(token) ? token[0] : token;
+
+  if (tokenValue) {
+    return <TokenVerifier token={tokenValue} />;
+  }
 
   return (
     <>
+      <p className="font-serif-body italic text-sm text-subtitle">
+        Use the link in your inbox to confirm your email address. The
+        verification email can take a minute to arrive.
+      </p>
+
       {userEmail ? (
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -75,14 +81,14 @@ async function VerifyActions({ searchParams }: VerifyPageProps) {
         ) : (
           <Link
             href={ROUTES.LOGIN}
-            className={buttonVariants({ variant: "auth", size: "auth-md" })}
+            className={buttonVariants({ variant: "auth", size: "auth-lg" })}
           >
             Back to sign in
           </Link>
         )}
         <Link
           href={ROUTES.REGISTER}
-          className={buttonVariants({ variant: "auth-outline", size: "auth-md" })}
+          className={buttonVariants({ variant: "auth-outline", size: "auth-lg" })}
         >
           Use another email
         </Link>

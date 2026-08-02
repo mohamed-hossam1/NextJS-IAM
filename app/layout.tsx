@@ -4,12 +4,10 @@ import {
   DM_Serif_Text,
   IBM_Plex_Mono,
 } from "next/font/google";
-import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import QueryProvider from "@/providers/query-provider";
-import { AuthErrorToast } from "@/components/auth/AuthErrorToast";
 
 import "./globals.css";
 
@@ -63,9 +61,6 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
-            <Suspense fallback={null}>
-              <AuthErrorToast />
-            </Suspense>
           </ThemeProvider>
         </QueryProvider>
       </body>

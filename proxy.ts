@@ -1,78 +1,34 @@
 import { NextResponse, type NextRequest } from "next/server";
-
 import { ROUTES } from "@/constants/routes";
 
-const SESSION_COOKIE_NAMES = [
-  "refresh_token",
-  "access_token",
-] as const;
-
-const PROTECTED_PREFIXES = [ROUTES.DASHBOARD] as const;
-const AUTH_PREFIXES = [
-  ROUTES.LOGIN,
-  ROUTES.REGISTER,
-  ROUTES.FORGOTPASSWORD,
-  ROUTES.RESETPASSWORD,
-  ROUTES.VERIFY,
-] as const;
-
-const REAUTH_PARAM = "reauth";
-
-function isUnder(pathname: string, prefixes: readonly string[]): boolean {
-  for (const prefix of prefixes) {
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function hasSessionCookie(request: NextRequest): boolean {
-  for (const name of SESSION_COOKIE_NAMES) {
-    if (request.cookies.get(name)?.value) return true;
-  }
-  return false;
-}
-
-function clearSessionCookies(response: NextResponse): NextResponse {
-  for (const name of SESSION_COOKIE_NAMES) {
-    response.cookies.delete(name);
-  }
-  return response;
-}
+const PROTECTED_PREFIX = ROUTES.DASHBOARD;
 
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+  const hasToken =
+    request.cookies.has("refresh_token") ||
+    request.cookies.has("access_token");
 
-  const protectedRoute = isUnder(pathname, PROTECTED_PREFIXES);
-  const authRoute = isUnder(pathname, AUTH_PREFIXES);
-  if (!protectedRoute && !authRoute) {
+  if (pathname.startsWith(PROTECTED_PREFIX)) {
+    if (!hasToken) {
+      const loginUrl = new URL(ROUTES.LOGIN, request.url);
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     return NextResponse.next();
   }
 
-  const isAuthed = hasSessionCookie(request);
-
-  if (protectedRoute && !isAuthed) {
-    const loginUrl = new URL(ROUTES.LOGIN, request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (authRoute && isAuthed) {
-    if (searchParams.has(REAUTH_PARAM)) {
-      const fetchSite = request.headers.get("sec-fetch-site");
-      const isTrustedNavigation =
-        !fetchSite || fetchSite === "same-origin" || fetchSite === "none";
-      if (!isTrustedNavigation) {
-        return NextResponse.redirect(new URL(ROUTES.DASHBOARD, request.url));
-      }
-      return clearSessionCookies(NextResponse.next());
+  if (hasToken) {
+    if (searchParams.has("reauth")) {
+      const res = NextResponse.next();
+      res.cookies.delete("refresh_token");
+      res.cookies.delete("access_token");
+      return res;
     }
 
-    const hasOptIn =
-      searchParams.has("token") ||
-      searchParams.has("type") ||
-      pathname.startsWith(ROUTES.VERIFY);
+    const isVerifyPath = pathname === ROUTES.VERIFY || pathname.startsWith(`${ROUTES.VERIFY}/`);
+    const hasOptIn = searchParams.has("token") || searchParams.has("type") || isVerifyPath;
+
     if (!hasOptIn) {
       return NextResponse.redirect(new URL(ROUTES.DASHBOARD, request.url));
     }
