@@ -1,7 +1,7 @@
 "use server";
 
 import z from "zod";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, setAccessToken } from "@/lib/api/client";
 import { actionClient } from "@/lib/next-action-handler/safe-action";
 import {
   ForgotPasswordSchema,
@@ -23,7 +23,12 @@ export const login = actionClient
   .metadata({ actionName: "auth.login" })
   .inputSchema(LoginSchema)
   .action(async ({ parsedInput }) => {
-    return await apiClient.post("/auth/sign-in", parsedInput);
+    const result = await apiClient.post<{ accessToken?: string }>(
+      "/auth/sign-in",
+      parsedInput,
+    );
+    if (result.accessToken) setAccessToken(result.accessToken);
+    return result;
   });
 
 export const signInWithGoogle = actionClient
@@ -54,7 +59,12 @@ export const verifyEmail = actionClient
   .metadata({ actionName: "auth.verifyEmail" })
   .inputSchema(VerifyEmailSchema)
   .action(async ({ parsedInput }) => {
-    return await apiClient.post("/auth/verify-email", parsedInput);
+    const result = await apiClient.post<{ accessToken?: string }>(
+      "/auth/verify-email",
+      parsedInput,
+    );
+    if (result.accessToken) setAccessToken(result.accessToken);
+    return result;
   });
 
 export const resendVerification = actionClient
@@ -106,5 +116,7 @@ export const linkAccount = actionClient
 export const signOut = actionClient
   .metadata({ actionName: "auth.signOut" })
   .action(async () => {
-    return await apiClient.post("/auth/logout");
+    const result = await apiClient.post("/auth/logout");
+    setAccessToken(null);
+    return result;
   });

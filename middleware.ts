@@ -3,14 +3,13 @@ import { ROUTES } from "@/constants/routes";
 
 const PROTECTED_PREFIX = ROUTES.DASHBOARD;
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  const hasToken =
-    request.cookies.has("refresh_token") ||
-    request.cookies.has("access_token");
+
+  const hasSession = request.cookies.has("refresh_token");
 
   if (pathname.startsWith(PROTECTED_PREFIX)) {
-    if (!hasToken) {
+    if (!hasSession) {
       const loginUrl = new URL(ROUTES.LOGIN, request.url);
       loginUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(loginUrl);
@@ -18,16 +17,17 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (hasToken) {
+  if (hasSession) {
     if (searchParams.has("reauth")) {
       const res = NextResponse.next();
       res.cookies.delete("refresh_token");
-      res.cookies.delete("access_token");
       return res;
     }
 
-    const isVerifyPath = pathname === ROUTES.VERIFY || pathname.startsWith(`${ROUTES.VERIFY}/`);
-    const hasOptIn = searchParams.has("token") || searchParams.has("type") || isVerifyPath;
+    const isVerifyPath =
+      pathname === ROUTES.VERIFY || pathname.startsWith(`${ROUTES.VERIFY}/`);
+    const hasOptIn =
+      searchParams.has("token") || searchParams.has("type") || isVerifyPath;
 
     if (!hasOptIn) {
       return NextResponse.redirect(new URL(ROUTES.DASHBOARD, request.url));
