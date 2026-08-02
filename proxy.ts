@@ -3,8 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/constants/routes";
 
 const SESSION_COOKIE_NAMES = [
-  "better-auth.session_token",
-  "__Secure-better-auth.session_token",
+  "refresh_token",
+  "access_token",
 ] as const;
 
 const PROTECTED_PREFIXES = [ROUTES.DASHBOARD] as const;

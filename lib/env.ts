@@ -23,18 +23,16 @@ const NEXT_PUBLIC_APP_URL = stripTrailingSlash(
     "NEXT_PUBLIC_APP_URL",
     process.env.NEXT_PUBLIC_APP_URL ??
       process.env.NEXT_PUBLIC_BASE_URL ??
-      (isServer ? process.env.BETTER_AUTH_URL : undefined),
+      "http://localhost:3000",
   ),
 );
 
+const NEXT_PUBLIC_API_URL = stripTrailingSlash(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api",
+);
+
 let serverEnvCache: {
-  DATABASE_URL: string;
-  BETTER_AUTH_SECRET: string;
-  BETTER_AUTH_URL: string;
-  GOOGLE_CLIENT_ID: string;
-  GOOGLE_CLIENT_SECRET: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
+  BACKEND_API_URL: string;
   PINGRAM_API_KEY: string;
   PINGRAM_BASE_URL: string;
   NODE_ENV: "development" | "test" | "production";
@@ -50,30 +48,7 @@ function getServerEnv() {
   if (serverEnvCache) return serverEnvCache;
 
   serverEnvCache = {
-    DATABASE_URL: readRequired("DATABASE_URL", process.env.DATABASE_URL),
-    BETTER_AUTH_SECRET: readRequired(
-      "BETTER_AUTH_SECRET",
-      process.env.BETTER_AUTH_SECRET,
-    ),
-    BETTER_AUTH_URL: stripTrailingSlash(
-      process.env.BETTER_AUTH_URL?.trim() || NEXT_PUBLIC_APP_URL,
-    ),
-    GOOGLE_CLIENT_ID: readRequired(
-      "GOOGLE_CLIENT_ID",
-      process.env.GOOGLE_CLIENT_ID,
-    ),
-    GOOGLE_CLIENT_SECRET: readRequired(
-      "GOOGLE_CLIENT_SECRET",
-      process.env.GOOGLE_CLIENT_SECRET,
-    ),
-    GITHUB_CLIENT_ID:
-      process.env.GITHUB_CLIENT_ID?.trim() || process.env.GITHUB_CLIENT_SECRET?.trim()
-        ? readRequired("GITHUB_CLIENT_ID", process.env.GITHUB_CLIENT_ID)
-        : undefined,
-    GITHUB_CLIENT_SECRET:
-      process.env.GITHUB_CLIENT_ID?.trim() || process.env.GITHUB_CLIENT_SECRET?.trim()
-        ? readRequired("GITHUB_CLIENT_SECRET", process.env.GITHUB_CLIENT_SECRET)
-        : undefined,
+    BACKEND_API_URL: NEXT_PUBLIC_API_URL,
     PINGRAM_API_KEY: readRequired(
       "PINGRAM_API_KEY",
       process.env.PINGRAM_API_KEY,
@@ -93,6 +68,7 @@ function getServerEnv() {
 
 export const publicEnv = {
   appUrl: NEXT_PUBLIC_APP_URL,
+  apiUrl: NEXT_PUBLIC_API_URL,
 } as const;
 
 export { getServerEnv as serverEnv };
