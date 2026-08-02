@@ -1,19 +1,20 @@
-const ERROR_CODES = [
-  "BAD_REQUEST",
-  "UNAUTHORIZED",
-  "FORBIDDEN",
-  "NOT_FOUND",
-  "RATE_LIMITED",
-  "INTERNAL_SERVER_ERROR",
-] as const;
-
-export type ErrorCode = (typeof ERROR_CODES)[number];
+export type ErrorCode =
+  | "BAD_REQUEST"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "CONFLICT"
+  | "UNPROCESSABLE_ENTITY"
+  | "RATE_LIMITED"
+  | "INTERNAL_SERVER_ERROR";
 
 const STATUS_CODE_MAP: Record<number, ErrorCode> = {
   400: "BAD_REQUEST",
   401: "UNAUTHORIZED",
   403: "FORBIDDEN",
   404: "NOT_FOUND",
+  409: "CONFLICT",
+  422: "UNPROCESSABLE_ENTITY",
   429: "RATE_LIMITED",
 };
 

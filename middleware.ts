@@ -6,7 +6,8 @@ const PROTECTED_PREFIX = ROUTES.DASHBOARD;
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  const hasSession = request.cookies.has("refresh_token");
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+  const hasSession = Boolean(refreshToken?.trim());
 
   if (pathname.startsWith(PROTECTED_PREFIX)) {
     if (!hasSession) {

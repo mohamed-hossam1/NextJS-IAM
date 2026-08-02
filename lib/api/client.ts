@@ -27,22 +27,39 @@ instance.interceptors.request.use(async (config) => {
   }
 
   if (typeof window === "undefined") {
-    try {
-      const { cookies } = await import("next/headers");
-      const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
-
-      if (cookieHeader) {
-        config.headers.set("Cookie", cookieHeader);
-      }
-    } catch {}
+    const headers = await getServerRequestHeaders();
+    for (const [name, value] of Object.entries(headers)) {
+      config.headers.set(name, value);
+    }
   }
 
   return config;
 });
+
+async function getServerRequestHeaders(): Promise<Record<string, string>> {
+  if (typeof window !== "undefined") return {};
+
+  try {
+    const { cookies, headers } = await import("next/headers");
+    const cookieStore = await cookies();
+    const requestHeaders = await headers();
+    const cookieHeader = cookieStore
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join("; ");
+    const userAgent = requestHeaders.get("user-agent");
+    const forwardedFor = requestHeaders.get("x-forwarded-for");
+    const result: Record<string, string> = {};
+
+    if (cookieHeader) result.Cookie = cookieHeader;
+    if (userAgent) result["User-Agent"] = userAgent;
+    if (forwardedFor) result["X-Forwarded-For"] = forwardedFor;
+
+    return result;
+  } catch {
+    return {};
+  }
+}
 
 instance.interceptors.response.use(
   async (response) => {
@@ -76,8 +93,10 @@ async function tryRefreshAccessToken(): Promise<boolean> {
 
   refreshPromise = (async () => {
     try {
+      const headers = await getServerRequestHeaders();
       const res = await axios.post(`${BASE_URL}/auth/refresh`, undefined, {
         withCredentials: true,
+        headers,
       });
 
       await forwardSetCookieHeaders(res.headers["set-cookie"]);
@@ -193,15 +212,6 @@ export const apiClient = {
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await instance.patch<T>(url, data, config);
-    return response.data;
-  },
-
-  async put<T>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig,
-  ): Promise<T> {
-    const response = await instance.put<T>(url, data, config);
     return response.data;
   },
 

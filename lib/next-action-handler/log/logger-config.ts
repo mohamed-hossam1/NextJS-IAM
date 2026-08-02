@@ -1,5 +1,6 @@
+import "server-only";
+
 import pino from "pino";
-import pretty from "pino-pretty";
 import type { ErrorCode } from "../error/errors";
 
 export const ERROR_LOG_LEVEL: Record<ErrorCode, "warn" | "error"> = {
@@ -7,6 +8,8 @@ export const ERROR_LOG_LEVEL: Record<ErrorCode, "warn" | "error"> = {
   UNAUTHORIZED: "warn",
   FORBIDDEN: "warn",
   NOT_FOUND: "warn",
+  CONFLICT: "warn",
+  UNPROCESSABLE_ENTITY: "warn",
   RATE_LIMITED: "warn",
   INTERNAL_SERVER_ERROR: "error",
 };
@@ -29,17 +32,35 @@ const baseOptions: pino.LoggerOptions = {
   },
 };
 
-const prettyStream = usePretty
-  ? pretty({
-      colorize: true,
-      translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-      singleLine: true,
-      levelFirst: false,
-      ignore: "pid,hostname,action,durationMs,errorCode,source",
-      sync: true,
-    })
-  : undefined;
+const LEVEL_COLORS: Record<number, string> = {
+  10: "\x1b[90mTRACE\x1b[0m",
+  20: "\x1b[34mDEBUG\x1b[0m",
+  30: "\x1b[32mINFO\x1b[0m",
+  40: "\x1b[33mWARN\x1b[0m",
+  50: "\x1b[31mERROR\x1b[0m",
+  60: "\x1b[35mFATAL\x1b[0m",
+};
 
-export const logger = prettyStream
-  ? pino(baseOptions, prettyStream)
+function createPrettyStream() {
+  return {
+    write(raw: string) {
+      try {
+        const log = JSON.parse(raw);
+        const timeStr = log.time ? new Date(log.time).toISOString().replace("T", " ").replace("Z", "") : "";
+        const levelStr = LEVEL_COLORS[log.level] ?? "LOG";
+        const message = log.msg || "";
+        console.log(`[${timeStr}] ${levelStr}: ${message}`);
+        if (log.stack) {
+          console.error(log.stack);
+        }
+      } catch {
+        console.log(raw.trim());
+      }
+    },
+  };
+}
+
+export const logger = usePretty
+  ? pino(baseOptions, createPrettyStream())
   : pino(baseOptions);
+
