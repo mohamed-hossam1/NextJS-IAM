@@ -9,7 +9,6 @@ import { Toaster } from "@/components/ui/sonner";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import QueryProvider from "@/providers/query-provider";
-import { publicEnv } from "@/lib/env";
 import { AuthErrorToast } from "@/components/auth/AuthErrorToast";
 
 import "./globals.css";
@@ -32,8 +31,10 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(publicEnv.appUrl),
+  metadataBase: new URL(appUrl),
   title: {
     template: "%s | Traqon",
     default: "Traqon",

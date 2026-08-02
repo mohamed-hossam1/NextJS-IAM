@@ -8,7 +8,6 @@ import {
 
 import { logActionError, logActionExecution } from "./log/logger";
 import { ActionError } from "./error/errors";
-import { requireUser } from "../auth/auth-helpers";
 
 export const actionClient = createSafeActionClient({
   defineMetadataSchema: () =>
@@ -57,9 +56,4 @@ export const actionClient = createSafeActionClient({
   }
 
   return result;
-});
-
-export const authedActionClient = actionClient.use(async ({ next }) => {
-  const user = await requireUser();
-  return next({ ctx: { user } });
 });

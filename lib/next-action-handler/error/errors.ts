@@ -9,6 +9,14 @@ const ERROR_CODES = [
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
+const STATUS_CODE_MAP: Record<number, ErrorCode> = {
+  400: "BAD_REQUEST",
+  401: "UNAUTHORIZED",
+  403: "FORBIDDEN",
+  404: "NOT_FOUND",
+  429: "RATE_LIMITED",
+};
+
 export class ActionError extends Error {
   public readonly code: ErrorCode;
   public readonly expose: boolean;
@@ -43,32 +51,14 @@ export class ApiError extends ActionError {
   public readonly statusCode: number;
 
   constructor(statusCode: number, message: string, cause?: unknown) {
-    let code: ErrorCode = "INTERNAL_SERVER_ERROR";
-    let expose = true;
+    const code = STATUS_CODE_MAP[statusCode];
 
-    switch (statusCode) {
-      case 400:
-        code = "BAD_REQUEST";
-        break;
-      case 401:
-        code = "UNAUTHORIZED";
-        break;
-      case 403:
-        code = "FORBIDDEN";
-        break;
-      case 404:
-        code = "NOT_FOUND";
-        break;
-      case 429:
-        code = "RATE_LIMITED";
-        break;
-      default:
-        code = "INTERNAL_SERVER_ERROR";
-        expose = false;
-        break;
-    }
-
-    super({ message, code, expose, cause });
+    super({
+      message,
+      code: code ?? "INTERNAL_SERVER_ERROR",
+      expose: Boolean(code),
+      cause,
+    });
     this.statusCode = statusCode;
   }
 }
