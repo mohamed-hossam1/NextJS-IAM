@@ -8,7 +8,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen w-full bg-background">
       <header className="flex items-center justify-between border-b border-foreground px-6 py-4">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          mocode · dashboard
+          Traqon · dashboard
         </p>
         <Suspense fallback={<SessionActionsSkeleton />}>
           <SessionActions />

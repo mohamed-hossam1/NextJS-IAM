@@ -35,8 +35,8 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.appUrl),
   title: {
-    template: "%s | mocode",
-    default: "mocode",
+    template: "%s | Traqon",
+    default: "Traqon",
   },
   description: "",
 };

@@ -9,11 +9,27 @@ export const UpdateProfileSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(3, { message: "Username must be at least 3 characters long." })
-    .max(30, { message: "Username cannot exceed 30 characters." }),
+    .min(3, { message: "Name must be at least 3 characters long." })
+    .max(100, { message: "Name cannot exceed 100 characters." })
+    .optional(),
+  avatarUrl: z
+    .string()
+    .url({ message: "Please provide a valid URL for avatar." })
+    .max(2048)
+    .optional()
+    .nullable(),
 });
 
 export const ChangePasswordSchema = z.object({
-  currentPassword: PasswordRule,
+  oldPassword: PasswordRule,
   newPassword: PasswordRule,
 });
+
+export const SetPasswordSchema = z.object({
+  password: PasswordRule,
+});
+
+export const RevokeSessionSchema = z.object({
+  sessionId: z.string().uuid({ message: "Invalid session ID format." }),
+});
+

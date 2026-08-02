@@ -9,7 +9,6 @@ export const ERROR_LOG_LEVEL: Record<ErrorCode, "warn" | "error"> = {
   FORBIDDEN: "warn",
   NOT_FOUND: "warn",
   RATE_LIMITED: "warn",
-  DATABASE_ERROR: "error",
   INTERNAL_SERVER_ERROR: "error",
 };
 

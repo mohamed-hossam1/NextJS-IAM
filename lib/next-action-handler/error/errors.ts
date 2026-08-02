@@ -1,15 +1,9 @@
 const ERROR_CODES = [
   "BAD_REQUEST",
-  "VALIDATION_ERROR",
-
   "UNAUTHORIZED",
   "FORBIDDEN",
-
   "NOT_FOUND",
-
   "RATE_LIMITED",
-
-  "DATABASE_ERROR",
   "INTERNAL_SERVER_ERROR",
 ] as const;
 
@@ -35,106 +29,46 @@ export class ActionError extends Error {
     cause?: unknown;
   }) {
     super(message);
-
     this.name = new.target.name;
-
     this.code = code;
     this.expose = expose;
     this.suppressActionLog = suppressActionLog;
     this.cause = cause;
-
     Object.setPrototypeOf(this, new.target.prototype);
-
     Error.captureStackTrace?.(this, new.target);
   }
 }
 
-export class BadRequestError extends ActionError {
-  constructor(message = "Bad request", cause?: unknown) {
-    super({
-      message,
-      code: "BAD_REQUEST",
-      cause,
-    });
-  }
-}
+export class ApiError extends ActionError {
+  public readonly statusCode: number;
 
-export class ValidationError extends ActionError {
-  public readonly fields?: Record<string, string[]>;
+  constructor(statusCode: number, message: string, cause?: unknown) {
+    let code: ErrorCode = "INTERNAL_SERVER_ERROR";
+    let expose = true;
 
-  constructor(
-    message = "Invalid input",
-    fields?: Record<string, string[]>,
-    cause?: unknown,
-  ) {
-    super({
-      message,
-      code: "VALIDATION_ERROR",
-      cause,
-    });
+    switch (statusCode) {
+      case 400:
+        code = "BAD_REQUEST";
+        break;
+      case 401:
+        code = "UNAUTHORIZED";
+        break;
+      case 403:
+        code = "FORBIDDEN";
+        break;
+      case 404:
+        code = "NOT_FOUND";
+        break;
+      case 429:
+        code = "RATE_LIMITED";
+        break;
+      default:
+        code = "INTERNAL_SERVER_ERROR";
+        expose = false;
+        break;
+    }
 
-    this.fields = fields;
-  }
-}
-
-export class UnauthorizedError extends ActionError {
-  constructor(message = "Unauthorized", cause?: unknown) {
-    super({
-      message,
-      code: "UNAUTHORIZED",
-      cause,
-    });
-  }
-}
-
-export class ForbiddenError extends ActionError {
-  constructor(message = "Forbidden", cause?: unknown) {
-    super({
-      message,
-      code: "FORBIDDEN",
-      cause,
-    });
-  }
-}
-
-export class NotFoundError extends ActionError {
-  constructor(message = "Resource not found", cause?: unknown) {
-    super({
-      message,
-      code: "NOT_FOUND",
-      cause,
-    });
-  }
-}
-
-export class RateLimitError extends ActionError {
-  constructor(message = "Too many requests", cause?: unknown) {
-    super({
-      message,
-      code: "RATE_LIMITED",
-      cause,
-    });
-  }
-}
-
-export class DatabaseError extends ActionError {
-  constructor(message = "Database operation failed", cause?: unknown) {
-    super({
-      message,
-      code: "DATABASE_ERROR",
-      expose: false,
-      cause,
-    });
-  }
-}
-
-export class InternalServerError extends ActionError {
-  constructor(message = "Something went wrong", cause?: unknown) {
-    super({
-      message,
-      code: "INTERNAL_SERVER_ERROR",
-      expose: false,
-      cause,
-    });
+    super({ message, code, expose, cause });
+    this.statusCode = statusCode;
   }
 }

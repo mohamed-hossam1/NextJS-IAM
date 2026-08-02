@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const metadata: Metadata = {
-  title: "mocode",
+  title: "Traqon",
   description: "A modern web application built with Next.js",
 };
 

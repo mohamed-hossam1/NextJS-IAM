@@ -1,6 +1,5 @@
 import { ERROR_LOG_LEVEL, logger } from "./logger-config";
 import { ActionError } from "../error/errors";
-import type { NormalizedError } from "../types";
 
 type BaseLogOptions = {
   action: string;
@@ -20,30 +19,8 @@ type ActionExecutionLogOptions = BaseLogOptions & {
 };
 
 type ActionErrorLogOptions = BaseLogOptions & {
-  error: NormalizedError;
+  error: unknown;
 };
-
-function buildCauseMeta(
-  cause: NormalizedError["cause"],
-  isDevelopment: boolean,
-) {
-  if (cause instanceof Error) {
-    const isSafeCauseMessage =
-      cause instanceof ActionError ? cause.expose : false;
-
-    return {
-      name: cause.name,
-      message: isDevelopment || isSafeCauseMessage ? cause.message : undefined,
-      stack: isDevelopment ? cause.stack : undefined,
-    };
-  }
-
-  if (isDevelopment) {
-    return cause;
-  }
-
-  return undefined;
-}
 
 function formatMessage({
   action,
@@ -59,7 +36,7 @@ function formatMessage({
   const actionLabel = action ? `[${action}] ` : "";
   const errorLabel = errorCode ? `${errorCode} ` : "";
   const durationLabel =
-    typeof durationMs === "number" ? ` (${durationMs}ms)` : "";
+    typeof durationMs === "number" ? ` (${durationMs})ms` : "";
 
   return `${actionLabel}${errorLabel}${message}${durationLabel}`.trim();
 }
@@ -115,33 +92,38 @@ export function logActionExecution({
 }
 
 export function logActionError({ action, error }: ActionErrorLogOptions) {
-  const level = ERROR_LOG_LEVEL[error.code];
-  const isDevelopment = process.env.NODE_ENV === "development";
+  if (error instanceof ActionError) {
+    const level = ERROR_LOG_LEVEL[error.code] ?? "error";
+    const payload = {
+      action,
+      errorCode: error.code,
+    };
+    const message = formatMessage({
+      action,
+      message: error.message,
+      errorCode: error.code,
+    });
 
-  const cause = isDevelopment
-    ? buildCauseMeta(error.cause, isDevelopment)
-    : undefined;
+    if (level === "error") {
+      logger.error(payload, message);
+      return;
+    }
 
-  const logMeta = {
-    errorCode: error.code,
-    ...(isDevelopment ? { stack: error.stack, cause } : {}),
-  };
-
-  const payload = {
-    action,
-    ...logMeta,
-  };
-
-  const message = formatMessage({
-    action,
-    message: error.message,
-    errorCode: error.code,
-  });
-
-  if (level === "error") {
-    logger.error(payload, message);
+    logger.warn(payload, message);
     return;
   }
 
-  logger.warn(payload, message);
+  const err = error instanceof Error ? error : new Error(String(error));
+  logger.error(
+    {
+      action,
+      errorCode: "INTERNAL_SERVER_ERROR",
+      stack: err.stack,
+    },
+    formatMessage({
+      action,
+      message: err.message,
+      errorCode: "INTERNAL_SERVER_ERROR",
+    }),
+  );
 }

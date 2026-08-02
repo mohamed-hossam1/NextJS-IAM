@@ -1,5 +1,5 @@
 import "server-only";
-import { UnauthorizedError } from "@/lib/next-action-handler/error/errors";
+import { ApiError } from "@/lib/next-action-handler/error/errors";
 
 export type AuthUser = {
   id: string;
@@ -31,18 +31,17 @@ export type AuthenticatedContext = {
 };
 
 export async function getSession(): Promise<AuthenticatedContext | null> {
-  // Will be implemented in the NestJS API integration step
   return null;
 }
 
 export async function requireSession(): Promise<AuthenticatedContext> {
   const ctx = await getSession();
-  if (!ctx) throw new UnauthorizedError();
+  if (!ctx) throw new ApiError(401, "Unauthorized");
   return ctx;
 }
 
 export async function requireUser(): Promise<AuthUser> {
   const ctx = await getSession();
-  if (!ctx) throw new UnauthorizedError();
+  if (!ctx) throw new ApiError(401, "Unauthorized");
   return { id: ctx.user.id, email: ctx.user.email };
 }

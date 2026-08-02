@@ -20,8 +20,9 @@ export const RegisterSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(3, { message: "Username must be at least 3 characters long." })
-    .max(30, { message: "Username cannot exceed 30 characters." }),
+    .min(3, { message: "Name must be at least 3 characters long." })
+    .max(100, { message: "Name cannot exceed 100 characters." })
+    .optional(),
   email: EmailRule,
   password: PasswordRule,
 });
@@ -31,7 +32,16 @@ export const ForgotPasswordSchema = z.object({
 });
 
 export const ResetPasswordSchema = z.object({
+  token: z.string().min(1, { message: "Reset token is required." }),
   password: PasswordRule,
+});
+
+export const VerifyEmailSchema = z.object({
+  token: z.string().min(1, { message: "Verification token is required." }),
+});
+
+export const ResendVerificationEmailSchema = z.object({
+  email: EmailRule,
 });
 
 export const SafeAccountSchema = z.object({
@@ -42,4 +52,3 @@ export const SafeAccountSchema = z.object({
 });
 
 export type SafeAccount = z.infer<typeof SafeAccountSchema>;
-
