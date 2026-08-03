@@ -5,7 +5,7 @@ import {
   getBrowserInformation,
 } from "@/lib/visitorInfo/browserInfo";
 import { DeviceIcon } from "@/lib/visitorInfo/DeviceIcon";
-import type { PublicSession } from "@/lib/auth/auth-helpers";
+import type { PublicSession } from "@/types/auth";
 import { Badge } from "@/components/profile/badge";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";

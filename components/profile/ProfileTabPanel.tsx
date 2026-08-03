@@ -18,7 +18,7 @@ import { ProfileFieldLabel } from "@/components/profile/field-label";
 import { SectionHeader } from "@/components/profile/section-header";
 import { getErrorMessage, getInitials } from "@/lib/utils";
 import { sessionQueryKey } from "@/lib/reactQuery/query-keys";
-import type { AuthenticatedContext, PublicUser } from "@/lib/auth/auth-helpers";
+import type { AuthenticatedContext, PublicUser } from "@/types/auth";
 import {
   AlertTriangle,
   Check,

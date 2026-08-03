@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 import { LoginSchema, RegisterSchema } from "@/lib/zodSchema/auth-schema";
-import { login, register, signInWithGoogle } from "@/actions/auth";
+import { login, register } from "@/actions/auth";
 import { accountQueryKey, sessionQueryKey } from "@/lib/reactQuery/query-keys";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -95,26 +95,11 @@ export function AuthForm({ defaultValues, formType }: AuthFormProps) {
     );
   }
 
-  async function handleGoogleSignIn() {
+  function handleGoogleSignIn() {
     if (googleLoading) return;
     setGoogleLoading(true);
-    try {
-      const result = await signInWithGoogle();
-      if (result?.serverError) {
-        toast.error(result.serverError.message, { position: "top-center" });
-        return;
-      }
-      const url = result?.data?.url;
-      if (!url) {
-        toast.error("Unable to start Google sign in.", {
-          position: "top-center",
-        });
-        return;
-      }
-      window.location.assign(url);
-    } finally {
-      setGoogleLoading(false);
-    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+    window.location.assign(`${apiUrl}/auth/google`);
   }
 
   return (

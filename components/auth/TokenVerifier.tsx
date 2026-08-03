@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { verifyEmail } from "@/actions/auth";
@@ -9,6 +10,7 @@ import { ROUTES } from "@/constants/routes";
 import { buttonVariants } from "@/components/ui/button.variants";
 
 export function TokenVerifier({ token }: { token: string }) {
+  const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -20,27 +22,38 @@ export function TokenVerifier({ token }: { token: string }) {
     calledRef.current = true;
 
     async function runVerification() {
-      const result = await verifyEmail({ token });
+      try {
+        const result = await verifyEmail({ token });
 
-      if (result?.serverError) {
+        if (result?.serverError) {
+          setStatus("error");
+          setErrorMessage(result.serverError.message);
+          toast.error(result.serverError.message, { position: "top-center" });
+          return;
+        }
+
+        setStatus("success");
+        toast.success("Email verified successfully!", {
+          position: "top-center",
+        });
+
+        // The server action forwards the refresh cookie before resolving.
+        // Use Next navigation so middleware sees the new authenticated session.
+        window.setTimeout(() => {
+          router.replace(ROUTES.DASHBOARD);
+          router.refresh();
+        }, 350);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to verify your email.";
         setStatus("error");
-        setErrorMessage(result.serverError.message);
-        toast.error(result.serverError.message, { position: "top-center" });
-        return;
+        setErrorMessage(message);
+        toast.error(message, { position: "top-center" });
       }
-
-      setStatus("success");
-      toast.success("Email verified successfully!", {
-        position: "top-center",
-      });
-
-      setTimeout(() => {
-        window.location.replace(ROUTES.DASHBOARD);
-      }, 500);
     }
 
     runVerification();
-  }, [token]);
+  }, [router, token]);
 
   if (status === "loading") {
     return (

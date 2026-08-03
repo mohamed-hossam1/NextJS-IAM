@@ -14,17 +14,20 @@ export const getCurrentSession = actionClient
   .metadata({ actionName: "profile.getCurrentSession" })
   .action(async () => {
     try {
-      const user = await apiClient.get<{
-        id: string;
-        email: string;
-        name?: string | null;
-        avatarUrl?: string | null;
-        isVerified?: boolean;
-        createdAt: string;
-        updatedAt: string;
-        hasPassword?: boolean;
+      const data = await apiClient.get<{
+        user: {
+          id: string;
+          email: string;
+          name?: string | null;
+          avatarUrl?: string | null;
+          isVerified?: boolean;
+          createdAt: string;
+          updatedAt: string;
+          hasPassword?: boolean;
+        };
       }>("/users/me");
 
+      const user = data?.user;
       if (!user?.id) return null;
 
       const publicUser: PublicUser = {
@@ -63,17 +66,17 @@ export const updateProfile = actionClient
 export const hasPassword = actionClient
   .metadata({ actionName: "profile.hasPassword" })
   .action(async () => {
-    const user = await apiClient.get<{ hasPassword: boolean }>("/users/me");
-    return user?.hasPassword ?? false;
+    const data = await apiClient.get<{ user: { hasPassword: boolean } }>("/users/me");
+    return data?.user?.hasPassword ?? false;
   });
 
 export const sendCurrentUserPasswordResetEmail = actionClient
   .metadata({ actionName: "profile.sendCurrentUserPasswordResetEmail" })
   .action(async () => {
     try {
-      const user = await apiClient.get<{ email: string }>("/users/me");
-      if (user?.email) {
-        await apiClient.post("/auth/forgot-password", { email: user.email });
+      const data = await apiClient.get<{ user: { email: string } }>("/users/me");
+      if (data?.user?.email) {
+        await apiClient.post("/auth/forgot-password", { email: data.user.email });
       }
     } catch {}
 
@@ -111,23 +114,25 @@ export const listSessionsPublic = actionClient
   .action(async () => {
     const data = await apiClient.get<{
       sessions: Array<{
-        id: string;
+        sessionId: string;
         deviceName?: string;
-        ipAddress?: string;
         userAgent?: string;
-        isCurrent: boolean;
+        ipAddress?: string;
+        isCurrentSession: boolean;
         createdAt: string;
-        updatedAt: string;
+        lastUsedAt: string;
       }>;
     }>("/auth/sessions");
 
     return (data?.sessions ?? []).map((s) => ({
-      id: s.id,
+      id: s.sessionId,
       createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      updatedAt: s.lastUsedAt,
       expiresAt: "",
       ipAddress: s.ipAddress ?? null,
+      deviceName: s.deviceName ?? null,
       userAgent: s.userAgent ?? null,
+      isCurrent: s.isCurrentSession,
     }));
   });
 

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getCurrentSession } from "@/actions/profile";
-import type { AuthenticatedContext } from "@/lib/auth/auth-helpers";
+import type { AuthenticatedContext } from "@/types/auth";
 import { sessionQueryKey } from "@/lib/reactQuery/query-keys";
 
 export function useSession() {

@@ -31,12 +31,6 @@ export const login = actionClient
     return result;
   });
 
-export const signInWithGoogle = actionClient
-  .metadata({ actionName: "auth.signInWithGoogle" })
-  .action(async () => {
-    return await apiClient.get<{ url: string }>("/auth/google");
-  });
-
 export const forgotPassword = actionClient
   .metadata({ actionName: "auth.forgotPassword" })
   .inputSchema(ForgotPasswordSchema)
@@ -104,13 +98,6 @@ export const unLinkAccount = actionClient
   .action(async ({ parsedInput }) => {
     const provider = parsedInput.provider ?? parsedInput.providerId;
     return await apiClient.post("/auth/accounts/unlink", { provider });
-  });
-
-export const linkAccount = actionClient
-  .metadata({ actionName: "auth.linkAccount" })
-  .inputSchema(z.object({ provider: z.string() }))
-  .action(async () => {
-    return await apiClient.get<{ url: string }>("/auth/google");
   });
 
 export const signOut = actionClient

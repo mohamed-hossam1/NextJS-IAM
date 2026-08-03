@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { ProfileFieldLabel } from "@/components/profile/field-label";
 import { SectionHeader } from "@/components/profile/section-header";
 import { TabsContent } from "@/components/ui/tabs";
-import type { PublicUser } from "@/lib/auth/auth-helpers";
+import type { PublicUser } from "@/types/auth";
 import { getErrorMessage } from "@/lib/utils";
 import { accountHasPasswordQueryKey } from "@/lib/reactQuery/query-keys";
 
@@ -44,7 +44,9 @@ export function SecurityTabPanel({
   const hasPasswordQuery = useQuery({
     queryKey: accountHasPasswordQueryKey,
     enabled: isOpen && isActive,
-    staleTime: 5 * 60 * 1000,
+    // This is a security setting and can change outside this tab (for example,
+    // after a password reset), so always refresh it when the tab opens.
+    staleTime: 0,
     queryFn: async () => {
       const result = await hasPassword();
       if (result?.serverError) {

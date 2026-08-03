@@ -46,12 +46,3 @@ export const VerifyEmailSchema = z.object({
 export const ResendVerificationEmailSchema = z.object({
   email: EmailRule,
 });
-
-export const SafeAccountSchema = z.object({
-  id: z.string(),
-  providerId: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
-
-export type SafeAccount = z.infer<typeof SafeAccountSchema>;
