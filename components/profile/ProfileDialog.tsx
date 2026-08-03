@@ -7,7 +7,7 @@ import { VisuallyHidden } from "radix-ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { LogOut } from "lucide-react";
-import type { PublicSession, PublicUser } from "@/lib/auth/auth-helpers";
+import type { PublicUser } from "@/types/auth";
 import {
   parseProfileDialogTab,
   type ProfileDialogTab,
@@ -20,7 +20,6 @@ import { LinksTabPanel } from "./LinksTabPanel";
 
 export function ProfileDialog({
   user,
-  session,
   isOpen,
   activeTab,
   onOpenChange,
@@ -29,7 +28,6 @@ export function ProfileDialog({
   isSigningOut = false,
 }: {
   user: PublicUser;
-  session: PublicSession;
   isOpen: boolean;
   activeTab: ProfileDialogTab;
   onOpenChange: (open: boolean) => void;
@@ -111,7 +109,6 @@ export function ProfileDialog({
               isActive={activeTab === "security"}
             />
             <SessionsTabPanel
-              currentSessionId={session.id}
               isOpen={isOpen}
               isActive={activeTab === "sessions"}
             />

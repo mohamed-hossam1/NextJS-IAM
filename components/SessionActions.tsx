@@ -65,7 +65,6 @@ export default function SessionActions() {
       />
       <ProfileDialog
         user={authenticatedSession.user}
-        session={authenticatedSession.session}
         isOpen={isOpen}
         activeTab={activeTab}
         onOpenChange={(open) => {

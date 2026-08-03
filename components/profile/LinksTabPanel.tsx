@@ -4,15 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { linkAccount, listUserAccounts, unLinkAccount } from "@/actions/auth";
+import { listUserAccounts, unLinkAccount } from "@/actions/auth";
 import { SectionHeader } from "@/components/profile/section-header";
 import { Badge } from "@/components/profile/badge";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { accountConnectionsQueryKey } from "@/lib/reactQuery/query-keys";
-import { getErrorMessage } from "@/lib/utils";
-import type { PublicUser } from "@/lib/auth/auth-helpers";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
+import type { PublicUser } from "@/types/auth";
 
 export function LinksTabPanel({
   user,
@@ -39,20 +38,9 @@ export function LinksTabPanel({
   });
 
   const linkMutation = useMutation({
-    mutationFn: async (provider: "google") => {
-      const result = await linkAccount({ provider });
-      if (result?.serverError) {
-        throw new Error(result.serverError.message || "Failed to connect account.");
-      }
-      return result?.data;
-    },
-    onSuccess: (data) => {
-      if (data?.url) {
-        window.location.assign(data.url);
-      } else {
-        toast.success("Account connected successfully.", { position: "top-center" });
-        void queryClient.invalidateQueries({ queryKey: accountConnectionsQueryKey });
-      }
+    mutationFn: async () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+      window.location.assign(`${apiUrl}/auth/google`);
     },
     onError: (error) => {
       toast.error(getErrorMessage(error), { position: "top-center" });
@@ -81,14 +69,14 @@ export function LinksTabPanel({
   const isGoogleConnected = !!googleAccount;
 
   const isGoogleLoading =
-    (linkMutation.isPending && linkMutation.variables === "google") ||
+    linkMutation.isPending ||
     (unlinkMutation.isPending && unlinkMutation.variables?.providerId === "google");
 
   const handleGoogleToggle = () => {
     if (isGoogleConnected) {
       unlinkMutation.mutate({ providerId: "google" });
     } else {
-      linkMutation.mutate("google");
+      linkMutation.mutate();
     }
   };
 

@@ -10,15 +10,13 @@ import { SectionHeader } from "@/components/profile/section-header";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { getErrorMessage } from "@/lib/utils";
-import type { PublicSession } from "@/lib/auth/auth-helpers";
+import type { PublicSession } from "@/types/auth";
 import { accountSessionsQueryKey } from "@/lib/reactQuery/query-keys";
 
 export function SessionsTabPanel({
-  currentSessionId,
   isOpen,
   isActive,
 }: {
-  currentSessionId: string;
   isOpen: boolean;
   isActive: boolean;
 }) {
@@ -66,12 +64,8 @@ export function SessionsTabPanel({
   });
 
   const sessions = sessionsQuery.data ?? [];
-  const currentSession = sessions.find(
-    (session) => session.id === currentSessionId,
-  );
-  const otherSessions = sessions.filter(
-    (session) => session.id !== currentSessionId,
-  );
+  const currentSession = sessions.find((session) => session.isCurrent);
+  const otherSessions = sessions.filter((session) => !session.isCurrent);
   const revokingSessionId = revokeSessionMutation.isPending
     ? revokeSessionMutation.variables.sessionId
     : null;
