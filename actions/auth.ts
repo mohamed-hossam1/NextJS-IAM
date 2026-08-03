@@ -75,9 +75,10 @@ export const resendVerification = actionClient
 export const listUserAccounts = actionClient
   .metadata({ actionName: "auth.listUserAccounts" })
   .action(async () => {
-    const accounts = await apiClient.get<
-      Array<{ id: string; provider: string; providerUserId: string }>
-    >("/auth/accounts");
+    const accounts =
+      await apiClient.get<
+        Array<{ id: string; provider: string; providerUserId: string }>
+      >("/auth/accounts");
 
     return (accounts ?? []).map((acc) => ({
       id: acc.id,
@@ -98,6 +99,12 @@ export const unLinkAccount = actionClient
   .action(async ({ parsedInput }) => {
     const provider = parsedInput.provider ?? parsedInput.providerId;
     return await apiClient.post("/auth/accounts/unlink", { provider });
+  });
+
+export const linkGoogleAccount = actionClient
+  .metadata({ actionName: "auth.linkGoogleAccount" })
+  .action(async () => {
+    return await apiClient.get<{ url: string }>("/auth/google/link");
   });
 
 export const signOut = actionClient

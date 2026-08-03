@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { listUserAccounts, unLinkAccount } from "@/actions/auth";
+import { listUserAccounts, unLinkAccount, linkGoogleAccount } from "@/actions/auth";
 import { SectionHeader } from "@/components/profile/section-header";
 import { Badge } from "@/components/profile/badge";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,13 @@ export function LinksTabPanel({
 
   const linkMutation = useMutation({
     mutationFn: async () => {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
-      window.location.assign(`${apiUrl}/auth/google`);
+      const result = await linkGoogleAccount();
+      if (result?.serverError || !result?.data?.url) {
+        throw new Error(
+          result?.serverError?.message || "Failed to initiate Google account link.",
+        );
+      }
+      window.location.assign(result.data.url);
     },
     onError: (error) => {
       toast.error(getErrorMessage(error), { position: "top-center" });

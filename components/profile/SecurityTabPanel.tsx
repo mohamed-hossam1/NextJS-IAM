@@ -24,7 +24,10 @@ import { SectionHeader } from "@/components/profile/section-header";
 import { TabsContent } from "@/components/ui/tabs";
 import type { PublicUser } from "@/types/auth";
 import { getErrorMessage } from "@/lib/utils";
-import { accountHasPasswordQueryKey } from "@/lib/reactQuery/query-keys";
+import {
+  accountHasPasswordQueryKey,
+  accountSessionsQueryKey,
+} from "@/lib/reactQuery/query-keys";
 
 export function SecurityTabPanel({
   user,
@@ -37,6 +40,7 @@ export function SecurityTabPanel({
 }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [revokeOtherSessions, setRevokeOtherSessions] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const queryClient = useQueryClient();
@@ -63,6 +67,7 @@ export function SecurityTabPanel({
     mutationFn: async (formData: {
       currentPassword: string;
       newPassword: string;
+      revokeOtherSessions: boolean;
     }) => {
       const result = await changePassword(formData);
       if (result?.serverError) {
@@ -74,9 +79,11 @@ export function SecurityTabPanel({
     onSuccess: () => {
       setCurrentPassword("");
       setNewPassword("");
+      setRevokeOtherSessions(false);
       setShowCurrentPassword(false);
       setShowNewPassword(false);
       queryClient.invalidateQueries({ queryKey: accountHasPasswordQueryKey });
+      queryClient.invalidateQueries({ queryKey: accountSessionsQueryKey });
       toast.success("Password changed successfully.", {
         position: "top-center",
       });
@@ -131,7 +138,11 @@ export function SecurityTabPanel({
       return;
     }
 
-    changePasswordMutation.mutate({ currentPassword, newPassword });
+    changePasswordMutation.mutate({
+      currentPassword,
+      newPassword,
+      revokeOtherSessions,
+    });
   }
 
   const isLoadingPasswordState =
@@ -258,6 +269,25 @@ export function SecurityTabPanel({
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <input
+                id="revoke-other-sessions"
+                type="checkbox"
+                checked={revokeOtherSessions}
+                onChange={(event) =>
+                  setRevokeOtherSessions(event.target.checked)
+                }
+                disabled={changePasswordMutation.isPending}
+                className="size-4 rounded-none border border-foreground bg-background text-foreground accent-accent cursor-pointer disabled:cursor-not-allowed"
+              />
+              <label
+                htmlFor="revoke-other-sessions"
+                className="cursor-pointer font-serif-body italic text-sm text-subtitle select-none hover:text-foreground transition-colors"
+              >
+                Sign out of all other devices
+              </label>
             </div>
 
             <Button

@@ -79,6 +79,7 @@ export function ForgotPasswordForm() {
               </div>
 
               <div className="flex flex-col gap-3">
+                <ResendForgotPasswordButton email={submittedEmail} />
                 <Button
                   type="button"
                   variant="auth-outline"
@@ -90,7 +91,6 @@ export function ForgotPasswordForm() {
                 >
                   Try another email
                 </Button>
-                <ResendForgotPasswordButton email={submittedEmail} />
               </div>
             </div>
           </AuthCard>

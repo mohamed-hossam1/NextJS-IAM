@@ -48,7 +48,9 @@ async function getServerRequestHeaders(): Promise<Record<string, string>> {
       .map((c) => `${c.name}=${c.value}`)
       .join("; ");
     const userAgent = requestHeaders.get("user-agent");
-    const forwardedFor = requestHeaders.get("x-forwarded-for");
+    const forwardedFor =
+      requestHeaders.get("x-forwarded-for") ||
+      requestHeaders.get("x-real-ip");
     const result: Record<string, string> = {};
 
     if (cookieHeader) result.Cookie = cookieHeader;

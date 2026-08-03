@@ -23,6 +23,7 @@ export const UpdateProfileSchema = z.object({
 export const ChangePasswordSchema = z.object({
   oldPassword: PasswordRule,
   newPassword: PasswordRule,
+  revokeOtherSessions: z.boolean().optional(),
 });
 
 export const SetPasswordSchema = z.object({

@@ -5,7 +5,6 @@ export type AuthUser = {
 
 export type PublicSession = {
   id: string;
-  deviceName?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
   isCurrent?: boolean;

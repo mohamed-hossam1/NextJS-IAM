@@ -89,6 +89,7 @@ const ChangePasswordInputSchema = z.object({
   oldPassword: z.string().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6),
+  revokeOtherSessions: z.boolean().optional(),
 });
 
 export const changePassword = actionClient
@@ -99,6 +100,7 @@ export const changePassword = actionClient
     return await apiClient.post("/auth/change-password", {
       oldPassword,
       newPassword: parsedInput.newPassword,
+      revokeOtherSessions: parsedInput.revokeOtherSessions ?? false,
     });
   });
 
@@ -115,7 +117,6 @@ export const listSessionsPublic = actionClient
     const data = await apiClient.get<{
       sessions: Array<{
         sessionId: string;
-        deviceName?: string;
         userAgent?: string;
         ipAddress?: string;
         isCurrentSession: boolean;
@@ -130,7 +131,6 @@ export const listSessionsPublic = actionClient
       updatedAt: s.lastUsedAt,
       expiresAt: "",
       ipAddress: s.ipAddress ?? null,
-      deviceName: s.deviceName ?? null,
       userAgent: s.userAgent ?? null,
       isCurrent: s.isCurrentSession,
     }));

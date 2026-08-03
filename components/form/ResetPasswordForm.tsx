@@ -36,15 +36,13 @@ export function ResetPasswordForm({ token, type }: ResetPasswordFormProps) {
   const form = useForm<z.infer<typeof ResetPasswordSchema>>({
     resolver: zodResolver(ResetPasswordSchema),
     defaultValues: {
+      token,
       password: "",
     },
   });
 
   async function handleSubmit(data: z.infer<typeof ResetPasswordSchema>) {
-    const result = await resetPassword({
-      ...data,
-      token,
-    });
+    const result = await resetPassword(data);
 
     if (result?.serverError) {
       toast.error(result.serverError.message, { position: "top-center" });
