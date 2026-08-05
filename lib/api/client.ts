@@ -26,6 +26,20 @@ instance.interceptors.request.use(async (config) => {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
+  const method = config.method?.toLowerCase();
+  if (method && ["post", "put", "patch", "delete"].includes(method)) {
+    if (
+      !config.headers.get("x-idempotency-key") &&
+      !config.headers.get("X-Idempotency-Key")
+    ) {
+      const key =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      config.headers.set("x-idempotency-key", key);
+    }
+  }
+
   if (typeof window === "undefined") {
     const headers = await getServerRequestHeaders();
     for (const [name, value] of Object.entries(headers)) {
@@ -49,8 +63,7 @@ async function getServerRequestHeaders(): Promise<Record<string, string>> {
       .join("; ");
     const userAgent = requestHeaders.get("user-agent");
     const forwardedFor =
-      requestHeaders.get("x-forwarded-for") ||
-      requestHeaders.get("x-real-ip");
+      requestHeaders.get("x-forwarded-for") || requestHeaders.get("x-real-ip");
     const result: Record<string, string> = {};
 
     if (cookieHeader) result.Cookie = cookieHeader;

@@ -39,7 +39,7 @@ export function ProfileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[min(680px,calc(100dvh-2rem))] max-w-[920px] flex-col gap-0 overflow-hidden rounded-none border border-foreground bg-card p-0 ring-0 shadow-none sm:max-w-[920px]">
+      <DialogContent className="flex h-[min(680px,calc(100dvh-2rem))] max-w-230 flex-col gap-0 overflow-hidden rounded-none border border-foreground bg-card p-0 ring-0 shadow-none sm:max-w-230">
         <VisuallyHidden.Root>
           <DialogTitle>Account Settings</DialogTitle>
         </VisuallyHidden.Root>
@@ -56,7 +56,7 @@ export function ProfileDialog({
           }}
           className="h-full w-full flex-col gap-0 md:flex-row"
         >
-          <aside className="flex w-full shrink-0 flex-col border-b border-foreground bg-card p-5 md:w-[260px] md:border-b-0 md:border-r">
+          <aside className="flex w-full shrink-0 flex-col border-b border-foreground bg-card p-5 md:w-65 md:border-b-0 md:border-r">
             <div className="flex items-center gap-3 md:flex-col md:items-start md:text-left">
               <Avatar className="size-14 shrink-0">
                 <AvatarImage src={user.image ?? undefined} alt={user.name} />

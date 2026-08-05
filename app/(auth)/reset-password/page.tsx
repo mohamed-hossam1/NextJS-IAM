@@ -54,7 +54,7 @@ async function ResetPasswordContent({ searchParams }: ResetPasswordPageProps) {
           <AuthCard>
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-accent-foreground bg-accent px-2 py-[3px]">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-accent-foreground bg-accent px-2 py-0.75">
                   Link expired
                 </span>
               </div>
