@@ -6,11 +6,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getErrorMessage(error: unknown): string {
+  let message = "Something went wrong.";
+
   if (error instanceof Error) {
-    return error.message;
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
   }
 
-  return "Something went wrong.";
+  if (
+    message.includes("SERVER ACTION") ||
+    message.includes("WAS NOT FOUND ON THE SERVER") ||
+    message.includes("FAILED-TO-FIND-SERVER-ACTION")
+  ) {
+    return "The application was updated. Please refresh the page and try again.";
+  }
+
+  return message;
 }
 
 export const getInitials = (user: { name?: string | null; email?: string | null }) => {

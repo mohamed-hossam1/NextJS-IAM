@@ -6,4 +6,7 @@ export const ROUTES = {
   RESETPASSWORD: "/reset-password",
   VERIFY: "/verify",
   DASHBOARD: "/dashboard",
+  BANNED: "/banned",
+  ADMIN: "/admin",
+  ADMIN_USERS: "/admin/users",
 };

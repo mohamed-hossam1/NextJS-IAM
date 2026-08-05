@@ -6,8 +6,9 @@ import {
 } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 
-import { ThemeProvider } from "@/providers/theme-provider";
 import QueryProvider from "@/providers/query-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
+import { BannedGuard } from "@/components/auth/BannedGuard";
 
 import "./globals.css";
 
@@ -59,7 +60,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <BannedGuard>{children}</BannedGuard>
             <Toaster />
           </ThemeProvider>
         </QueryProvider>

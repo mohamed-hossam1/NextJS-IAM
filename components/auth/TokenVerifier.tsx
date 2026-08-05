@@ -9,8 +9,13 @@ import { verifyEmail } from "@/actions/auth";
 import { ROUTES } from "@/constants/routes";
 import { buttonVariants } from "@/components/ui/button.variants";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { setAccessToken } from "@/lib/api/client";
+import { accountQueryKey, sessionQueryKey } from "@/lib/reactQuery/query-keys";
+
 export function TokenVerifier({ token }: { token: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -32,17 +37,22 @@ export function TokenVerifier({ token }: { token: string }) {
           return;
         }
 
+        const data = result?.data as { accessToken?: string } | undefined;
+        if (data?.accessToken) {
+          setAccessToken(data.accessToken);
+        }
+
+        queryClient.removeQueries({ queryKey: sessionQueryKey });
+        queryClient.removeQueries({ queryKey: accountQueryKey });
+
         setStatus("success");
         toast.success("Email verified successfully!", {
           position: "top-center",
         });
 
-        // The server action forwards the refresh cookie before resolving.
-        // Use Next navigation so middleware sees the new authenticated session.
         window.setTimeout(() => {
-          router.replace(ROUTES.DASHBOARD);
-          router.refresh();
-        }, 350);
+          window.location.assign(ROUTES.DASHBOARD);
+        }, 500);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unable to verify your email.";
@@ -53,7 +63,7 @@ export function TokenVerifier({ token }: { token: string }) {
     }
 
     runVerification();
-  }, [router, token]);
+  }, [router, token, queryClient]);
 
   if (status === "loading") {
     return (
