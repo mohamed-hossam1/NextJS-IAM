@@ -13,3 +13,10 @@ export const accountConnectionsQueryKey = [
   ...accountQueryKey,
   "connections",
 ] as const;
+
+export const adminQueryKey = ["admin"] as const;
+export const adminUsersQueryKey = [...adminQueryKey, "users"] as const;
+export const adminUserDetailQueryKey = (id: string) =>
+  [...adminQueryKey, "users", id] as const;
+export const adminUserSessionsQueryKey = (id: string) =>
+  [...adminQueryKey, "users", id, "sessions"] as const;
