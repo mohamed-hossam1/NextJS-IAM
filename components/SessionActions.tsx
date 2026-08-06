@@ -14,10 +14,13 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/hooks/session";
 import { useProfileDialogUrlState } from "@/hooks/profile-dialog-url-state";
 
+import { useIsMounted } from "@/hooks/use-is-mounted";
+
 export default function SessionActions() {
+  const mounted = useIsMounted();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { data: authenticatedSession, isPending } = useSession();
+  const { data: authenticatedSession, isPending, isFetching } = useSession();
   const { isOpen, activeTab, openTab, closeDialog } =
     useProfileDialogUrlState();
 
@@ -41,11 +44,11 @@ export default function SessionActions() {
     },
   });
 
-  if (isPending) {
+  if (!mounted || isPending || authenticatedSession === undefined || (isFetching && !authenticatedSession)) {
     return <SessionActionsSkeleton />;
   }
 
-  if (!authenticatedSession) {
+  if (!authenticatedSession || !authenticatedSession.user || authenticatedSession.isBanned) {
     return (
       <Link
         href={ROUTES.LOGIN}

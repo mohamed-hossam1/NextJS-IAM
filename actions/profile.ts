@@ -8,11 +8,11 @@ import {
   SetPasswordSchema,
   UpdateProfileSchema,
 } from "@/lib/zodSchema/profile-schema";
-import type { PublicSession, PublicUser } from "@/types/auth";
+import type { AuthenticatedContext, PublicSession, PublicUser } from "@/types/auth";
 
 export const getCurrentSession = actionClient
   .metadata({ actionName: "profile.getCurrentSession" })
-  .action(async () => {
+  .action(async (): Promise<AuthenticatedContext | null> => {
     try {
       const data = await apiClient.get<{
         user: {
@@ -21,6 +21,7 @@ export const getCurrentSession = actionClient
           name?: string | null;
           avatarUrl?: string | null;
           isVerified?: boolean;
+          role?: "user" | "admin";
           createdAt: string;
           updatedAt: string;
           hasPassword?: boolean;
@@ -39,6 +40,7 @@ export const getCurrentSession = actionClient
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         hasPassword: user.hasPassword,
+        role: user.role,
       };
 
       const session: PublicSession = {
@@ -50,8 +52,28 @@ export const getCurrentSession = actionClient
         userAgent: null,
       };
 
-      return { session, user: publicUser };
-    } catch {
+      return { session, user: publicUser, isBanned: false, banReason: null };
+    } catch (error: unknown) {
+      const err = error as { status?: number; message?: string };
+      const message = err?.message || "";
+      const isBannedError =
+        err?.status === 403 ||
+        message.toLowerCase().includes("banned") ||
+        message.includes("ACCOUNT_BANNED");
+
+      if (isBannedError) {
+        let banReason: string | null = null;
+        if (message.includes(":")) {
+          const parts = message.split(":");
+          banReason = parts.slice(1).join(":").trim();
+        }
+        return {
+          session: null,
+          user: null,
+          isBanned: true,
+          banReason: banReason || null,
+        };
+      }
       return null;
     }
   });

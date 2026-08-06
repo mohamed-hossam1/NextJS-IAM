@@ -70,6 +70,23 @@ export function AuthForm({ defaultValues, formType }: AuthFormProps) {
       : register(data as z.infer<typeof RegisterSchema>));
 
     if (result?.serverError) {
+      const errorMsg = result.serverError.message || "";
+      const isBanned =
+        errorMsg.toLowerCase().includes("banned") ||
+        errorMsg.includes("ACCOUNT_BANNED");
+
+      if (isBanned) {
+        let banReason = "";
+        if (errorMsg.includes(":")) {
+          banReason = errorMsg.split(":").slice(1).join(":").trim();
+        }
+        const targetUrl = banReason
+          ? `${ROUTES.BANNED}?reason=${encodeURIComponent(banReason)}`
+          : ROUTES.BANNED;
+        window.location.assign(targetUrl);
+        return;
+      }
+
       toast.error(result.serverError.message, { position: "top-center" });
       return;
     }
@@ -82,6 +99,14 @@ export function AuthForm({ defaultValues, formType }: AuthFormProps) {
     if (isSignIn) {
       queryClient.removeQueries({ queryKey: sessionQueryKey });
       queryClient.removeQueries({ queryKey: accountQueryKey });
+
+      const loginResult = result?.data as { user?: { role?: string } } | undefined;
+      if (loginResult?.user?.role === "admin") {
+        router.replace(ROUTES.ADMIN);
+        router.refresh();
+        return;
+      }
+
       const destination = resolveNextRedirect(
         searchParams?.get("next") ?? null,
       );

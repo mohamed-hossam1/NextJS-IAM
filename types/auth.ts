@@ -22,9 +22,12 @@ export type PublicUser = {
   createdAt: string;
   updatedAt: string;
   hasPassword?: boolean;
+  role?: "user" | "admin";
 };
 
 export type AuthenticatedContext = {
-  session: PublicSession;
-  user: PublicUser;
+  session: PublicSession | null;
+  user: PublicUser | null;
+  isBanned?: boolean;
+  banReason?: string | null;
 };

@@ -6,7 +6,7 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
-  Mail,
+  Lock,
 } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import {
   changePassword,
   hasPassword,
-  sendCurrentUserPasswordResetEmail,
+  setPassword,
 } from "@/actions/profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import { getErrorMessage } from "@/lib/utils";
 import {
   accountHasPasswordQueryKey,
   accountSessionsQueryKey,
+  sessionQueryKey,
 } from "@/lib/reactQuery/query-keys";
 
 export function SecurityTabPanel({
@@ -43,6 +44,14 @@ export function SecurityTabPanel({
   const [revokeOtherSessions, setRevokeOtherSessions] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Set password form states (for accounts without a password)
+  const [setPasswordValue, setSetPasswordValue] = useState("");
+  const [confirmSetPasswordValue, setConfirmSetPasswordValue] = useState("");
+  const [setFormRevokeOtherSessions, setSetFormRevokeOtherSessions] = useState(false);
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [showConfirmSetPassword, setShowConfirmSetPassword] = useState(false);
+
   const queryClient = useQueryClient();
 
   const hasPasswordQuery = useQuery({
@@ -75,6 +84,9 @@ export function SecurityTabPanel({
           result.serverError?.message || "Failed to change your password.",
         );
       }
+      if (result?.validationErrors) {
+        throw new Error("Password does not meet requirements.");
+      }
     },
     onSuccess: () => {
       setCurrentPassword("");
@@ -84,6 +96,7 @@ export function SecurityTabPanel({
       setShowNewPassword(false);
       queryClient.invalidateQueries({ queryKey: accountHasPasswordQueryKey });
       queryClient.invalidateQueries({ queryKey: accountSessionsQueryKey });
+      queryClient.invalidateQueries({ queryKey: sessionQueryKey });
       toast.success("Password changed successfully.", {
         position: "top-center",
       });
@@ -93,19 +106,31 @@ export function SecurityTabPanel({
     },
   });
 
-  const sendResetEmailMutation = useMutation({
-    mutationFn: async () => {
-      const result = await sendCurrentUserPasswordResetEmail();
+  const setPasswordMutation = useMutation({
+    mutationFn: async (formData: {
+      password: string;
+      revokeOtherSessions: boolean;
+    }) => {
+      const result = await setPassword(formData);
       if (result?.serverError) {
         throw new Error(
-          result.serverError?.message ||
-            "Failed to send the password reset email.",
+          result.serverError?.message || "Failed to set your password.",
         );
+      }
+      if (result?.validationErrors) {
+        throw new Error("Password does not meet requirements.");
       }
     },
     onSuccess: () => {
+      setSetPasswordValue("");
+      setConfirmSetPasswordValue("");
+      setSetFormRevokeOtherSessions(false);
+      setShowSetPassword(false);
+      setShowConfirmSetPassword(false);
       queryClient.invalidateQueries({ queryKey: accountHasPasswordQueryKey });
-      toast.success("Password reset email sent. Check your inbox.", {
+      queryClient.invalidateQueries({ queryKey: accountSessionsQueryKey });
+      queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+      toast.success("Password created successfully.", {
         position: "top-center",
       });
     },
@@ -142,6 +167,29 @@ export function SecurityTabPanel({
       currentPassword,
       newPassword,
       revokeOtherSessions,
+    });
+  }
+
+  function handleSetPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (setPasswordValue.length < 6) {
+      toast.error("Password must be at least 6 characters.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    if (setPasswordValue !== confirmSetPasswordValue) {
+      toast.error("Passwords do not match.", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    setPasswordMutation.mutate({
+      password: setPasswordValue,
+      revokeOtherSessions: setFormRevokeOtherSessions,
     });
   }
 
@@ -311,42 +359,133 @@ export function SecurityTabPanel({
         )}
 
         {hasPasswordQuery.data === false && (
-          <div className="flex flex-col gap-5">
+          <form onSubmit={handleSetPassword} className="flex flex-col gap-5">
             <div className="flex items-start gap-3 border border-foreground bg-card p-4">
-              <Mail
+              <Lock
                 className="mt-0.5 size-5 shrink-0 text-accent"
                 aria-hidden="true"
               />
               <div className="flex-1">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-foreground">
-                  No password set
+                  Create a password
                 </p>
                 <p className="mt-1 font-serif-body italic text-sm text-subtitle">
-                  You signed in with a social provider. We&apos;ll send a reset
-                  link to{" "}
+                  You signed in with a social provider (
                   <span className="font-mono not-italic text-foreground">
                     {user.email}
-                  </span>{" "}
-                  so you can create a password.
+                  </span>
+                  ). Set a password to log in directly using your email.
                 </p>
               </div>
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <ProfileFieldLabel htmlFor="set-new-password">
+                New Password
+              </ProfileFieldLabel>
+              <div className="relative">
+                <Input
+                  id="set-new-password"
+                  type={showSetPassword ? "text" : "password"}
+                  value={setPasswordValue}
+                  onChange={(event) => setSetPasswordValue(event.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Enter new password"
+                  className="h-10 rounded-none border-foreground bg-background px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-accent focus-visible:ring-0"
+                  disabled={setPasswordMutation.isPending}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSetPassword((value) => !value)}
+                  className="absolute inset-y-0 right-3 flex cursor-pointer items-center text-subtitle transition-colors hover:text-foreground"
+                  aria-label={
+                    showSetPassword ? "Hide password" : "Show password"
+                  }
+                  aria-pressed={showSetPassword}
+                >
+                  {showSetPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <ProfileFieldLabel htmlFor="confirm-set-password">
+                Confirm Password
+              </ProfileFieldLabel>
+              <div className="relative">
+                <Input
+                  id="confirm-set-password"
+                  type={showConfirmSetPassword ? "text" : "password"}
+                  value={confirmSetPasswordValue}
+                  onChange={(event) =>
+                    setConfirmSetPasswordValue(event.target.value)
+                  }
+                  autoComplete="new-password"
+                  placeholder="Confirm new password"
+                  className="h-10 rounded-none border-foreground bg-background px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-accent focus-visible:ring-0"
+                  disabled={setPasswordMutation.isPending}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmSetPassword((value) => !value)}
+                  className="absolute inset-y-0 right-3 flex cursor-pointer items-center text-subtitle transition-colors hover:text-foreground"
+                  aria-label={
+                    showConfirmSetPassword
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                  aria-pressed={showConfirmSetPassword}
+                >
+                  {showConfirmSetPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <input
+                id="set-revoke-other-sessions"
+                type="checkbox"
+                checked={setFormRevokeOtherSessions}
+                onChange={(event) =>
+                  setSetFormRevokeOtherSessions(event.target.checked)
+                }
+                disabled={setPasswordMutation.isPending}
+                className="size-4 rounded-none border border-foreground bg-background text-foreground accent-accent cursor-pointer disabled:cursor-not-allowed"
+              />
+              <label
+                htmlFor="set-revoke-other-sessions"
+                className="cursor-pointer font-serif-body italic text-sm text-subtitle select-none hover:text-foreground transition-colors"
+              >
+                Sign out of all other devices
+              </label>
+            </div>
+
             <Button
-              type="button"
+              type="submit"
               variant="auth"
               size="auth-md"
               className="sm:w-auto"
-              onClick={() => sendResetEmailMutation.mutate()}
-              disabled={sendResetEmailMutation.isPending}
+              disabled={
+                setPasswordMutation.isPending ||
+                !setPasswordValue ||
+                !confirmSetPasswordValue
+              }
             >
-              {sendResetEmailMutation.isPending ? (
+              {setPasswordMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                "Send Reset Email"
+                "Set Password"
               )}
             </Button>
-          </div>
+          </form>
         )}
       </div>
     </TabsContent>
