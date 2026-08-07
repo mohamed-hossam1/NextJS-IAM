@@ -1,18 +1,70 @@
 import axios, { type AxiosRequestConfig } from "axios";
+import { cache } from "react";
 import { ApiError } from "@/lib/next-action-handler/error/errors";
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"
 ).replace(/\/$/, "");
 
-let accessToken: string | null = null;
+let clientAccessToken: string | null = null;
 
-export function setAccessToken(token: string | null) {
-  accessToken = token;
+const getRequestStore = cache(() => ({
+  accessToken: null as string | null,
+}));
+
+export async function setAccessToken(token: string | null): Promise<void> {
+  if (typeof window === "undefined") {
+    try {
+      getRequestStore().accessToken = token;
+    } catch {}
+
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      if (token) {
+        await cookieStore.set("access_token", token, {
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 15 * 60,
+        });
+      } else {
+        await cookieStore.delete("access_token");
+        await cookieStore.delete("refresh_token");
+      }
+    } catch {}
+  } else {
+    clientAccessToken = token;
+    if (token) {
+      document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
+    } else {
+      document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
+    }
+  }
 }
 
-export function getAccessToken() {
-  return accessToken;
+export async function getAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    try {
+      const reqToken = getRequestStore().accessToken;
+      if (reqToken) return reqToken;
+    } catch {}
+
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      return cookieStore.get("access_token")?.value ?? null;
+    } catch {
+      return null;
+    }
+  }
+  if (clientAccessToken) return clientAccessToken;
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
+    if (match) return decodeURIComponent(match[1]);
+  }
+  return null;
 }
 
 const instance = axios.create({
@@ -22,8 +74,9 @@ const instance = axios.create({
 });
 
 instance.interceptors.request.use(async (config) => {
-  if (accessToken) {
-    config.headers.set("Authorization", `Bearer ${accessToken}`);
+  const token = await getAccessToken();
+  if (token) {
+    config.headers.set("Authorization", `Bearer ${token}`);
   }
 
   const method = config.method?.toLowerCase();
@@ -87,26 +140,50 @@ instance.interceptors.response.use(
     }
 
     const { status, data } = error.response;
+    const errMsg = extractErrorMessage(data, error.message);
+    const isRevokedError =
+      status === 401 &&
+      (errMsg.toLowerCase().includes("revoked") ||
+        errMsg.toLowerCase().includes("token has been revoked"));
+
+    if (isRevokedError) {
+      await setAccessToken(null);
+      if (typeof window !== "undefined") {
+        import("@/lib/auth/revocation").then(({ triggerGlobalRevocation }) => {
+          triggerGlobalRevocation();
+        });
+      }
+      throw new ApiError(status, errMsg, error);
+    }
 
     if (status === 401 && !error.config?.__isRetry) {
       const refreshed = await tryRefreshAccessToken();
       if (refreshed && error.config) {
         error.config.__isRetry = true;
-        error.config.headers.set("Authorization", `Bearer ${accessToken}`);
+        const freshToken = await getAccessToken();
+        if (freshToken) {
+          error.config.headers.set("Authorization", `Bearer ${freshToken}`);
+        }
         return instance.request(error.config);
+      }
+
+      if (typeof window !== "undefined") {
+        import("@/lib/auth/revocation").then(({ triggerGlobalRevocation }) => {
+          triggerGlobalRevocation();
+        });
       }
     }
 
-    throw new ApiError(status, extractErrorMessage(data, error.message), error);
+    throw new ApiError(status, errMsg, error);
   },
 );
 
 let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefreshAccessToken(): Promise<boolean> {
-  if (refreshPromise) return refreshPromise;
+  if (typeof window !== "undefined" && refreshPromise) return refreshPromise;
 
-  refreshPromise = (async () => {
+  const doRefresh = async (): Promise<boolean> => {
     try {
       const headers = await getServerRequestHeaders();
       const res = await axios.post(`${BASE_URL}/auth/refresh`, undefined, {
@@ -118,19 +195,24 @@ async function tryRefreshAccessToken(): Promise<boolean> {
 
       const newToken = res.data?.accessToken;
       if (newToken) {
-        setAccessToken(newToken);
+        await setAccessToken(newToken);
         return true;
       }
       return false;
     } catch {
-      setAccessToken(null);
+      await setAccessToken(null);
       return false;
-    } finally {
-      refreshPromise = null;
     }
-  })();
+  };
 
-  return refreshPromise;
+  if (typeof window !== "undefined") {
+    refreshPromise = doRefresh().finally(() => {
+      refreshPromise = null;
+    });
+    return refreshPromise;
+  }
+
+  return doRefresh();
 }
 
 async function forwardSetCookieHeaders(
@@ -148,7 +230,11 @@ async function forwardSetCookieHeaders(
 
     for (const raw of cookieStrings) {
       const parsed = parseSetCookie(raw);
-      if (parsed) await cookieStore.set(parsed);
+      if (parsed) {
+        try {
+          await cookieStore.set(parsed);
+        } catch {}
+      }
     }
   } catch {}
 }
