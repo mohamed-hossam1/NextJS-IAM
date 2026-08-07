@@ -7,14 +7,16 @@ import { SessionActionsSkeleton } from "@/components/skeletons/SessionActionsSke
 import Link from "next/link";
 import { ROUTES } from "@/constants/routes";
 import { getErrorMessage } from "@/lib/utils";
-import { accountQueryKey, sessionQueryKey } from "@/lib/reactQuery/query-keys";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/hooks/session";
 import { useProfileDialogUrlState } from "@/hooks/profile-dialog-url-state";
 
+import { triggerGlobalRevocation } from "@/lib/auth/revocation";
 import { useIsMounted } from "@/hooks/use-is-mounted";
+
+import { useEffect } from "react";
 
 export default function SessionActions() {
   const mounted = useIsMounted();
@@ -23,6 +25,18 @@ export default function SessionActions() {
   const { data: authenticatedSession, isPending, isFetching } = useSession();
   const { isOpen, activeTab, openTab, closeDialog } =
     useProfileDialogUrlState();
+
+  useEffect(() => {
+    if (
+      mounted &&
+      !isPending &&
+      (!authenticatedSession || !authenticatedSession.user) &&
+      !authenticatedSession?.isBanned
+    ) {
+      triggerGlobalRevocation(queryClient);
+      router.replace(ROUTES.LOGIN);
+    }
+  }, [mounted, isPending, authenticatedSession, queryClient, router]);
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
@@ -33,8 +47,7 @@ export default function SessionActions() {
       }
     },
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: sessionQueryKey });
-      queryClient.removeQueries({ queryKey: accountQueryKey });
+      triggerGlobalRevocation(queryClient);
       router.replace(ROUTES.LOGIN);
     },
     onError: (error) => {

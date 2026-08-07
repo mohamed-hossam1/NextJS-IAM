@@ -39,7 +39,7 @@ export function TokenVerifier({ token }: { token: string }) {
 
         const data = result?.data as { accessToken?: string } | undefined;
         if (data?.accessToken) {
-          setAccessToken(data.accessToken);
+          await setAccessToken(data.accessToken);
         }
 
         queryClient.removeQueries({ queryKey: sessionQueryKey });
