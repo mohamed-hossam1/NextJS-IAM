@@ -7,6 +7,7 @@ import { AuthCard } from "@/components/form/auth-card";
 import { buttonVariants } from "@/components/ui/button.variants";
 import { ResendVerificationButton } from "@/components/button/ResendVerificationButton";
 import { TokenVerifier } from "@/components/auth/TokenVerifier";
+import { AuthFormSkeleton } from "@/components/skeletons/AuthFormSkeleton";
 
 type VerifyPageProps = {
   searchParams: Promise<{
@@ -38,7 +39,7 @@ export default function VerifyPage({ searchParams }: VerifyPageProps) {
               </span>
             </div>
 
-            <Suspense fallback={null}>
+            <Suspense fallback={<AuthFormSkeleton />}>
               <VerifyActions searchParams={searchParams} />
             </Suspense>
           </div>

@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { ForgotPasswordForm } from "@/components/form/ForgotPasswordForm";
+import { AuthFormSkeleton } from "@/components/skeletons/AuthFormSkeleton";
 
 export default function ForgotPasswordPage() {
   return (
@@ -13,7 +15,9 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
       <div className="w-full">
-        <ForgotPasswordForm />
+        <Suspense fallback={<AuthFormSkeleton />}>
+          <ForgotPasswordForm />
+        </Suspense>
       </div>
     </div>
   );

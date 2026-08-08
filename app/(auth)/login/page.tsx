@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { AuthForm } from "@/components/form/AuthForm";
+import { AuthFormSkeleton } from "@/components/skeletons/AuthFormSkeleton";
 
 export default function LoginPage() {
   return (
@@ -12,7 +13,7 @@ export default function LoginPage() {
         </p>
       </div>
       <div className="w-full">
-        <Suspense fallback={null}>
+        <Suspense fallback={<AuthFormSkeleton />}>
           <AuthForm
             formType="LOGIN"
             defaultValues={{
