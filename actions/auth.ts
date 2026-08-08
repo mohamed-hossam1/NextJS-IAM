@@ -27,7 +27,7 @@ export const login = actionClient
       "/auth/sign-in",
       parsedInput,
     );
-    if (result.accessToken) setAccessToken(result.accessToken);
+    if (result.accessToken) await setAccessToken(result.accessToken);
     return result;
   });
 
@@ -57,7 +57,7 @@ export const verifyEmail = actionClient
       "/auth/verify-email",
       parsedInput,
     );
-    if (result.accessToken) setAccessToken(result.accessToken);
+    if (result.accessToken) await setAccessToken(result.accessToken);
     return result;
   });
 
@@ -111,6 +111,6 @@ export const signOut = actionClient
   .metadata({ actionName: "auth.signOut" })
   .action(async () => {
     const result = await apiClient.post("/auth/logout");
-    setAccessToken(null);
+    await setAccessToken(null);
     return result;
   });

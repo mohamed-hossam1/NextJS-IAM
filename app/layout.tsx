@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { BannedGuard } from "@/components/auth/BannedGuard";
+import { RevocationListener } from "@/components/auth/RevocationListener";
 
 import "./globals.css";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
     >
       <body>
         <QueryProvider>
+          <RevocationListener />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

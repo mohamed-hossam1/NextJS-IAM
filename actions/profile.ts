@@ -1,14 +1,18 @@
 "use server";
 
 import z from "zod";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, setAccessToken } from "@/lib/api/client";
 import { actionClient } from "@/lib/next-action-handler/safe-action";
 import {
   RevokeSessionSchema,
   SetPasswordSchema,
   UpdateProfileSchema,
 } from "@/lib/zodSchema/profile-schema";
-import type { AuthenticatedContext, PublicSession, PublicUser } from "@/types/auth";
+import type {
+  AuthenticatedContext,
+  PublicSession,
+  PublicUser,
+} from "@/types/auth";
 
 export const getCurrentSession = actionClient
   .metadata({ actionName: "profile.getCurrentSession" })
@@ -17,6 +21,7 @@ export const getCurrentSession = actionClient
       const data = await apiClient.get<{
         user: {
           id: string;
+          sessionId?: string;
           email: string;
           name?: string | null;
           avatarUrl?: string | null;
@@ -29,7 +34,10 @@ export const getCurrentSession = actionClient
       }>("/users/me");
 
       const user = data?.user;
-      if (!user?.id) return null;
+      if (!user?.id) {
+        await setAccessToken(null);
+        return null;
+      }
 
       const publicUser: PublicUser = {
         id: user.id,
@@ -44,14 +52,13 @@ export const getCurrentSession = actionClient
       };
 
       const session: PublicSession = {
-        id: user.id,
+        id: user.sessionId ?? user.id,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         expiresAt: "",
         ipAddress: null,
         userAgent: null,
       };
-
       return { session, user: publicUser, isBanned: false, banReason: null };
     } catch (error: unknown) {
       const err = error as { status?: number; message?: string };
@@ -74,6 +81,8 @@ export const getCurrentSession = actionClient
           banReason: banReason || null,
         };
       }
+
+      await setAccessToken(null);
       return null;
     }
   });
@@ -88,7 +97,9 @@ export const updateProfile = actionClient
 export const hasPassword = actionClient
   .metadata({ actionName: "profile.hasPassword" })
   .action(async () => {
-    const data = await apiClient.get<{ user: { hasPassword: boolean } }>("/users/me");
+    const data = await apiClient.get<{ user: { hasPassword: boolean } }>(
+      "/users/me",
+    );
     return data?.user?.hasPassword ?? false;
   });
 
@@ -96,9 +107,13 @@ export const sendCurrentUserPasswordResetEmail = actionClient
   .metadata({ actionName: "profile.sendCurrentUserPasswordResetEmail" })
   .action(async () => {
     try {
-      const data = await apiClient.get<{ user: { email: string } }>("/users/me");
+      const data = await apiClient.get<{ user: { email: string } }>(
+        "/users/me",
+      );
       if (data?.user?.email) {
-        await apiClient.post("/auth/forgot-password", { email: data.user.email });
+        await apiClient.post("/auth/forgot-password", {
+          email: data.user.email,
+        });
       }
     } catch {}
 
