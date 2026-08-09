@@ -20,11 +20,12 @@ export function SearchInput({
   }
 
   useEffect(() => {
+    if (localValue.trim() === value) return;
     const timer = setTimeout(() => {
       onChange(localValue.trim());
     }, 300);
     return () => clearTimeout(timer);
-  }, [localValue, onChange]);
+  }, [localValue, value, onChange]);
 
   return (
     <input

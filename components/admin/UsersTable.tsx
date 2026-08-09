@@ -61,6 +61,10 @@ export function UsersTable() {
   const setParam = useCallback(
     (key: string, value?: string | number) => {
       const params = new URLSearchParams(searchParams?.toString() ?? "");
+      const currentValue = params.get(key) ?? "";
+      const newValue = value !== undefined && value !== "" ? String(value) : "";
+      if (currentValue === newValue && key !== "page") return;
+
       params.set("page", "1");
       if (value === undefined || value === "") {
         params.delete(key);

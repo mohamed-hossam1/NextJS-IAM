@@ -26,12 +26,17 @@ import type { AdminPublicUser } from "@/types/admin";
 
 import { unwrapAction } from "@/lib/next-action-handler/unwrap";
 
+import { useSession } from "@/hooks/session";
+
 export function UserActions({ user }: { user: AdminPublicUser }) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);
   const [showUnbanDialog, setShowUnbanDialog] = useState(false);
   const [banReason, setBanReason] = useState("");
+
+  const isSelf = session?.user?.id === user.id;
 
   const closeMenuAnd = (fn: () => void) => () => {
     setMenuOpen(false);
@@ -85,22 +90,26 @@ export function UserActions({ user }: { user: AdminPublicUser }) {
               View Details
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {!banned ? (
-            <DropdownMenuItem
-              variant="destructive"
-              className="font-mono text-[11px] uppercase tracking-widest cursor-pointer"
-              onClick={closeMenuAnd(() => setShowBanDialog(true))}
-            >
-              Ban User
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              className="font-mono text-[11px] uppercase tracking-widest cursor-pointer"
-              onClick={closeMenuAnd(() => setShowUnbanDialog(true))}
-            >
-              Unban User
-            </DropdownMenuItem>
+          {!isSelf && (
+            <>
+              <DropdownMenuSeparator />
+              {!banned ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="font-mono text-[11px] uppercase tracking-widest cursor-pointer"
+                  onClick={closeMenuAnd(() => setShowBanDialog(true))}
+                >
+                  Ban User
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className="font-mono text-[11px] uppercase tracking-widest cursor-pointer"
+                  onClick={closeMenuAnd(() => setShowUnbanDialog(true))}
+                >
+                  Unban User
+                </DropdownMenuItem>
+              )}
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

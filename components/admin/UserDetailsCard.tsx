@@ -98,43 +98,6 @@ export function UserDetailsCard({ user }: { user: AdminPublicUser }) {
         </div>
       )}
 
-      {user.banHistory && user.banHistory.length > 0 && (
-        <div className="mt-6 border-t border-border pt-4">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Ban History ({user.banHistory.length} {user.banHistory.length === 1 ? "record" : "records"})
-          </p>
-          <div className="mt-3 space-y-2">
-            {user.banHistory.map((item) => (
-              <div
-                key={item.id}
-                className="border border-border bg-background p-3 text-xs space-y-1"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">
-                    Reason: {item.banReason}
-                  </span>
-                  <span
-                    className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 shrink-0 ${
-                      !item.unbannedAt
-                        ? "bg-bad/10 text-bad"
-                        : "bg-good/10 text-good"
-                    }`}
-                  >
-                    {!item.unbannedAt ? "Active Ban" : "Unbanned"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground pt-1">
-                  <span>Banned: {new Date(item.bannedAt).toLocaleString()}</span>
-                  {item.unbannedAt && (
-                    <span>Unbanned: {new Date(item.unbannedAt).toLocaleString()}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {!isSelf && (
         <div className="mt-6 flex gap-3">
           {!banned ? (

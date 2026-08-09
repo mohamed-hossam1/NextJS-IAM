@@ -21,8 +21,12 @@ import { DeviceIcon } from "@/lib/visitorInfo/DeviceIcon";
 import { unwrapAction } from "@/lib/next-action-handler/unwrap";
 import { useState } from "react";
 
+import { useSession } from "@/hooks/session";
+
 export function UserSessionsTable({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
+  const { data: currentAuth } = useSession();
+  const currentSessionId = currentAuth?.session?.id;
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -48,7 +52,6 @@ export function UserSessionsTable({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-serif-display italic text-lg">Sessions</h2>
       {isLoading && <TableSkeleton rows={5} columns={7} />}
       {error && (
         <div className="border border-destructive bg-destructive/5 rounded-none p-6">
@@ -85,11 +88,12 @@ export function UserSessionsTable({ userId }: { userId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {sessions.map((session: AdminSession) => {
-                  const isActive = session.status === "active";
-                  const info = getBrowserInfo(session.userAgent);
+                {sessions.map((sessionItem: AdminSession) => {
+                  const isActive = sessionItem.status === "active";
+                  const isCurrent = sessionItem.sessionId === currentSessionId;
+                  const info = getBrowserInfo(sessionItem.userAgent);
                   return (
-                    <tr key={session.sessionId} className="border-b border-border hover:bg-card/50 transition-colors">
+                    <tr key={sessionItem.sessionId} className="border-b border-border hover:bg-card/50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <DeviceIcon device={info.device} className="size-4 text-muted-foreground" />
@@ -103,22 +107,27 @@ export function UserSessionsTable({ userId }: { userId: string }) {
                         {info.os}
                       </td>
                       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
-                        {session.ipAddress ?? "N/A"}
+                        {sessionItem.ipAddress ?? "N/A"}
                       </td>
                       <td className="px-4 py-3">
-                        <SessionStatusBadge status={session.status} />
+                        <SessionStatusBadge status={sessionItem.status} />
                       </td>
                       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
-                        {new Date(session.createdAt).toLocaleString()}
+                        {new Date(sessionItem.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
-                        {new Date(session.lastUsedAt).toLocaleString()}
+                        {new Date(sessionItem.lastUsedAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
-                        {isActive && (
-                          <Button variant="auth-outline" size="auth-sm" onClick={() => setConfirmRevoke(session.sessionId)}>
+                        {isActive && !isCurrent && (
+                          <Button variant="auth-outline" size="auth-sm" onClick={() => setConfirmRevoke(sessionItem.sessionId)}>
                             Revoke
                           </Button>
+                        )}
+                        {isCurrent && (
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                            Current Session
+                          </span>
                         )}
                       </td>
                     </tr>
