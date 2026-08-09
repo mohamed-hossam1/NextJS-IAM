@@ -1,11 +1,13 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getUserById } from "@/actions/admin";
 import { adminUserDetailQueryKey } from "@/lib/reactQuery/query-keys";
 import { UserDetailsCard } from "@/components/admin/UserDetailsCard";
 import { UserSessionsTable } from "@/components/admin/UserSessionsTable";
+import { BanHistoryTable } from "@/components/admin/BanHistoryTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,6 +17,7 @@ import { ROUTES } from "@/constants/routes";
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id as string;
+  const [activeTab, setActiveTab] = useState<"sessions" | "banHistory">("sessions");
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: adminUserDetailQueryKey(userId),
@@ -24,6 +27,8 @@ export default function UserDetailPage() {
       return result?.data;
     },
   });
+
+  const banHistoryCount = data?.user?.banHistory?.length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -60,7 +65,44 @@ export default function UserDetailPage() {
       {!isLoading && !error && data?.user && (
         <>
           <UserDetailsCard user={data.user} />
-          <UserSessionsTable userId={userId} />
+
+          <div className="space-y-4 pt-4">
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setActiveTab("sessions")}
+                className={`px-4 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${
+                  activeTab === "sessions"
+                    ? "border-b-2 border-accent text-foreground font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sessions
+              </button>
+              <button
+                onClick={() => setActiveTab("banHistory")}
+                className={`px-4 py-2 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2 ${
+                  activeTab === "banHistory"
+                    ? "border-b-2 border-accent text-foreground font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Ban History
+                {banHistoryCount > 0 && (
+                  <span className="px-1.5 py-0.5 font-mono text-[10px] bg-muted/20 text-muted-foreground">
+                    {banHistoryCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {activeTab === "sessions" && (
+              <UserSessionsTable userId={userId} />
+            )}
+
+            {activeTab === "banHistory" && (
+              <BanHistoryTable banHistory={data.user.banHistory ?? []} />
+            )}
+          </div>
         </>
       )}
     </div>
