@@ -141,19 +141,41 @@ instance.interceptors.response.use(
 
     const { status, data } = error.response;
     const errMsg = extractErrorMessage(data, error.message);
-    const isRevokedError =
-      status === 401 &&
-      (errMsg.toLowerCase().includes("revoked") ||
-        errMsg.toLowerCase().includes("token has been revoked"));
+    const errCode =
+      data && typeof data === "object" && "code" in data
+        ? String((data as Record<string, unknown>).code)
+        : undefined;
 
-    if (isRevokedError) {
-      await setAccessToken(null);
-      if (typeof window !== "undefined") {
-        import("@/lib/auth/revocation").then(({ triggerGlobalRevocation }) => {
-          triggerGlobalRevocation();
-        });
+    const isServiceUnavailable =
+      status === 503 || errCode === "AUTHORIZATION_SERVICE_UNAVAILABLE";
+    if (isServiceUnavailable) {
+      throw new ApiError(
+        503,
+        errMsg || "Authorization service is temporarily unavailable",
+        error,
+      );
+    }
+
+    const isStaleAuth =
+      status === 401 && errCode === "STALE_AUTHORIZATION";
+
+    if (
+      status === 401 &&
+      !isStaleAuth &&
+      !error.config?.__isRetry
+    ) {
+      const isRevokedError =
+        errMsg.toLowerCase().includes("revoked");
+
+      if (isRevokedError) {
+        await setAccessToken(null);
+        if (typeof window !== "undefined") {
+          import("@/lib/auth/revocation").then(({ triggerGlobalRevocation }) => {
+            triggerGlobalRevocation();
+          });
+        }
+        throw new ApiError(status, errMsg, error);
       }
-      throw new ApiError(status, errMsg, error);
     }
 
     if (status === 401 && !error.config?.__isRetry) {
@@ -178,41 +200,91 @@ instance.interceptors.response.use(
   },
 );
 
+const AUTH_REFRESH_LOCK = "auth-refresh";
+const AUTH_REFRESH_CHANNEL = "traqon_auth_refresh";
+
 let refreshPromise: Promise<boolean> | null = null;
 
+let lastRefreshTimestamp = 0;
+
 async function tryRefreshAccessToken(): Promise<boolean> {
-  if (typeof window !== "undefined" && refreshPromise) return refreshPromise;
+  if (typeof window === "undefined") {
+    return doRefresh();
+  }
 
-  const doRefresh = async (): Promise<boolean> => {
-    try {
-      const headers = await getServerRequestHeaders();
-      const res = await axios.post(`${BASE_URL}/auth/refresh`, undefined, {
-        withCredentials: true,
-        headers,
-      });
+  if (refreshPromise) return refreshPromise;
 
-      await forwardSetCookieHeaders(res.headers["set-cookie"]);
-
-      const newToken = res.data?.accessToken;
-      if (newToken) {
-        await setAccessToken(newToken);
-        return true;
-      }
-      return false;
-    } catch {
-      await setAccessToken(null);
-      return false;
-    }
-  };
-
-  if (typeof window !== "undefined") {
-    refreshPromise = doRefresh().finally(() => {
+  if ("locks" in navigator) {
+    refreshPromise = acquireRefreshLock().finally(() => {
       refreshPromise = null;
     });
     return refreshPromise;
   }
 
-  return doRefresh();
+  refreshPromise = doRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+async function acquireRefreshLock(): Promise<boolean> {
+  return navigator.locks.request(AUTH_REFRESH_LOCK, async () => {
+    const currentToken = await getAccessToken();
+    if (currentToken && lastRefreshTimestamp > Date.now() - 5_000) {
+      return true;
+    }
+
+    const result = await doRefresh();
+
+    if (result) {
+      broadcastRefreshSuccess();
+    }
+
+    return result;
+  });
+}
+
+async function doRefresh(): Promise<boolean> {
+  try {
+    const headers = await getServerRequestHeaders();
+    const res = await axios.post(`${BASE_URL}/auth/refresh`, undefined, {
+      withCredentials: true,
+      headers,
+    });
+
+    await forwardSetCookieHeaders(res.headers["set-cookie"]);
+
+    const newToken = res.data?.accessToken;
+    if (newToken) {
+      await setAccessToken(newToken);
+      lastRefreshTimestamp = Date.now();
+      return true;
+    }
+    return false;
+  } catch {
+    await setAccessToken(null);
+    return false;
+  }
+}
+
+function broadcastRefreshSuccess(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if ("BroadcastChannel" in window) {
+      const channel = new BroadcastChannel(AUTH_REFRESH_CHANNEL);
+      channel.postMessage({ type: "TOKEN_REFRESHED", timestamp: Date.now() });
+      channel.close();
+    }
+  } catch {}
+}
+
+if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+  const refreshChannel = new BroadcastChannel(AUTH_REFRESH_CHANNEL);
+  refreshChannel.onmessage = (event) => {
+    if (event.data?.type === "TOKEN_REFRESHED") {
+      lastRefreshTimestamp = event.data.timestamp ?? Date.now();
+    }
+  };
 }
 
 async function forwardSetCookieHeaders(
