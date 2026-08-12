@@ -33,3 +33,17 @@ export const RevokeSessionSchema = z.object({
   userId: z.string().uuid(),
   sessionId: z.string().uuid(),
 });
+
+export const ChangeRoleSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["user", "admin"]),
+});
+
+export const ListAuditLogsQuerySchema = z.object({
+  page: z.number().int().min(1).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  action: z.string().optional(),
+  adminId: z.string().uuid().optional(),
+  targetUserId: z.string().uuid().optional(),
+});
+

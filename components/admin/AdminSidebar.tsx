@@ -1,12 +1,13 @@
 "use client";
 
-import { Users, X } from "lucide-react";
+import { ShieldAlert, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 
 const navItems = [
   { label: "Users", href: ROUTES.ADMIN_USERS, icon: Users },
+  { label: "Audit Logs", href: ROUTES.ADMIN_AUDIT_LOGS, icon: ShieldAlert },
 ];
 
 export function AdminSidebar({

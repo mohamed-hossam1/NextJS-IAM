@@ -7,10 +7,17 @@ import {
   GetUserSchema,
   BanUserSchema,
   UnbanUserSchema,
+  ChangeRoleSchema,
   ListUserSessionsSchema,
   RevokeSessionSchema,
+  ListAuditLogsQuerySchema,
 } from "@/lib/zodSchema/admin-schema";
-import type { ListUsersResponse, ListUserSessionsResponse, AdminPublicUser } from "@/types/admin";
+import type {
+  ListUsersResponse,
+  ListUserSessionsResponse,
+  AdminPublicUser,
+  ListAuditLogsResponse,
+} from "@/types/admin";
 
 export const listUsers = actionClient
   .metadata({ actionName: "admin.listUsers" })
@@ -51,6 +58,15 @@ export const unbanUser = actionClient
     return await apiClient.post(`/users/${parsedInput.id}/unban`);
   });
 
+export const changeUserRole = actionClient
+  .metadata({ actionName: "admin.changeUserRole" })
+  .inputSchema(ChangeRoleSchema)
+  .action(async ({ parsedInput }) => {
+    return await apiClient.post(`/users/${parsedInput.id}/role`, {
+      role: parsedInput.role,
+    });
+  });
+
 export const listUserSessions = actionClient
   .metadata({ actionName: "admin.listUserSessions" })
   .inputSchema(ListUserSessionsSchema)
@@ -72,3 +88,20 @@ export const adminRevokeSession = actionClient
       `/users/${parsedInput.userId}/sessions/${parsedInput.sessionId}/revoke`,
     );
   });
+
+export const listAuditLogs = actionClient
+  .metadata({ actionName: "admin.listAuditLogs" })
+  .inputSchema(ListAuditLogsQuerySchema)
+  .action(async ({ parsedInput }) => {
+    const params = new URLSearchParams();
+    if (parsedInput.page) params.set("page", String(parsedInput.page));
+    if (parsedInput.limit) params.set("limit", String(parsedInput.limit));
+    if (parsedInput.action) params.set("action", parsedInput.action);
+    if (parsedInput.adminId) params.set("adminId", parsedInput.adminId);
+    if (parsedInput.targetUserId) params.set("targetUserId", parsedInput.targetUserId);
+    const query = params.toString();
+    return await apiClient.get<ListAuditLogsResponse>(
+      `/users/audit-logs${query ? `?${query}` : ""}`,
+    );
+  });
+

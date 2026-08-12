@@ -46,3 +46,23 @@ export type ListUserSessionsResponse = {
   sessions: AdminSession[];
   pagination: PaginationMeta;
 };
+
+export type AdminAuditLog = {
+  id: string;
+  adminId: string;
+  adminSessionId: string | null;
+  action: string;
+  targetUserId: string;
+  details: string | null;
+  createdAt: string;
+  adminName: string | null;
+  adminEmail: string | null;
+  targetUserName: string | null;
+  targetUserEmail: string | null;
+};
+
+export type ListAuditLogsResponse = {
+  data: AdminAuditLog[];
+  meta: PaginationMeta;
+};
+

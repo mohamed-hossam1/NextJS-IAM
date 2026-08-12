@@ -20,3 +20,4 @@ export const adminUserDetailQueryKey = (id: string) =>
   [...adminQueryKey, "users", id] as const;
 export const adminUserSessionsQueryKey = (id: string) =>
   [...adminQueryKey, "users", id, "sessions"] as const;
+export const adminAuditLogsQueryKey = [...adminQueryKey, "audit-logs"] as const;

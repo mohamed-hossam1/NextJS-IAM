@@ -9,4 +9,6 @@ export const ROUTES = {
   BANNED: "/banned",
   ADMIN: "/admin",
   ADMIN_USERS: "/admin/users",
+  ADMIN_AUDIT_LOGS: "/admin/audit-logs",
 };
+
