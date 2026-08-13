@@ -51,7 +51,3 @@ redis
 
 # ignore specs folder
 specs
-
-# markdown files
-*.md
-!README.md
