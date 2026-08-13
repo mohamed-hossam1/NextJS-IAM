@@ -23,7 +23,7 @@ function BannedContent() {
   const banReason = queryReason || sessionData?.banReason || null;
 
   const supportEmail =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "traqonapp@gmail.com";
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com";
 
   const handleCopyEmail = async () => {
     try {
@@ -51,9 +51,9 @@ function BannedContent() {
   };
 
   const mailtoUrl = `mailto:${supportEmail}?subject=${encodeURIComponent(
-    "Account Suspension Appeal - Traqon",
+    "Account Suspension Appeal",
   )}&body=${encodeURIComponent(
-    "Hello Traqon Support Team,\n\nMy account has been suspended and I would like to request a review of my account status.\n\nThank you.",
+    "Hello Support Team,\n\nMy account has been suspended and I would like to request a review of my account status.\n\nThank you.",
   )}`;
 
   return (

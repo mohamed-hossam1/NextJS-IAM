@@ -1,6 +1,6 @@
-# 🎨 Traqon - Front-End (Next.js 16 Client)
+# 🎨 Front-End (Next.js 16 Client)
 
-> **Modern, high-performance Web Application client for the Traqon IAM platform built with Next.js 16 (App Router & Turbopack), React 19, Bun, Tailwind CSS v4, and TanStack React Query v5.**
+> **Modern, high-performance Web Application client for the IAM platform built with Next.js 16 (App Router & Turbopack), React 19, Bun, Tailwind CSS v4, and TanStack React Query v5.**
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## 🚀 Overview
 
-The **Traqon Front-End** is a standalone, single-page application style Next.js client built for high security, multi-tab session synchronization, and an editorial user experience. It communicates seamlessly with the NestJS REST API using Next.js Server Actions (`next-safe-action`), Axios, and TanStack React Query.
+The **Front-End Application** is a standalone, single-page application style Next.js client built for high security, multi-tab session synchronization, and an editorial user experience. It communicates seamlessly with the NestJS REST API using Next.js Server Actions (`next-safe-action`), Axios, and TanStack React Query.
 
 ---
 
@@ -29,7 +29,7 @@ The **Traqon Front-End** is a standalone, single-page application style Next.js 
 
 ### 1. Multi-Tab Concurrency Control & Web Locks
 - **Web Locks API (`navigator.locks.request('auth-refresh')`):** Prevents token refresh race conditions when a user opens multiple browser tabs simultaneously. Only one tab executes `POST /api/auth/refresh` while waiting tabs reuse the newly issued access token.
-- **BroadcastChannel API (`traqon_auth_refresh` & `traqon_auth_revocation`):** Broadcasts token refresh and session revocation events across all active browser windows in real time.
+- **BroadcastChannel API (`project_name_auth_refresh` & `project_name_auth_revocation`):** Broadcasts token refresh and session revocation events across all active browser windows in real time.
 
 ### 2. End-to-End Type Safety & Data Fetching
 - **Server Actions with `next-safe-action`:** All API requests are processed through validated server actions using Zod schemas.
@@ -50,7 +50,7 @@ The **Traqon Front-End** is a standalone, single-page application style Next.js 
 
 ## 🎨 Design Aesthetic
 
-Traqon features a **Warm Editorial Aesthetic** inspired by print newspapers and financial dashboards:
+The application features a **Warm Editorial Aesthetic** inspired by print newspapers and financial dashboards:
 
 - **Headlines:** Serif typography using **DM Serif Display** & **DM Serif Text**.
 - **Metadata & Badges:** Monospace typography using **IBM Plex Mono** (always uppercase with wide tracking).
@@ -71,7 +71,7 @@ graph TD
     subgraph Multi-Tab Sync
         ApiClient -->|Check Lock| WebLocks[Web Locks API: auth-refresh]
         WebLocks -->|Refresh Lock Acquired| NestAPI[NestJS API /api]
-        NestAPI -->|New Tokens| Broadcast[BroadcastChannel: traqon_auth_refresh]
+        NestAPI -->|New Tokens| Broadcast[BroadcastChannel: project_name_auth_refresh]
         Broadcast -->|Notify Other Tabs| WaitingTabs[Waiting Browser Tabs]
     end
     
@@ -114,7 +114,7 @@ Create `.env.local` in the `front-end` directory:
 ```env
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_API_URL="http://localhost:5000/api"
-NEXT_PUBLIC_SUPPORT_EMAIL="traqonapp@gmail.com"
+NEXT_PUBLIC_SUPPORT_EMAIL="support@example.com"
 ```
 
 ### 2. Install Dependencies

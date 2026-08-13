@@ -1,8 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { setAccessToken } from "@/lib/api/client";
 
-const REVOCATION_CHANNEL_NAME = "traqon_auth_revocation";
-const REVOCATION_STORAGE_KEY = "traqon_session_revoked_at";
+const REVOCATION_CHANNEL_NAME = "project_name_auth_revocation";
+const REVOCATION_STORAGE_KEY = "project_name_session_revoked_at";
 
 type RevocationCallback = () => void;
 const listeners = new Set<RevocationCallback>();

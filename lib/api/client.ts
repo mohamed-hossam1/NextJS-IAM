@@ -201,7 +201,7 @@ instance.interceptors.response.use(
 );
 
 const AUTH_REFRESH_LOCK = "auth-refresh";
-const AUTH_REFRESH_CHANNEL = "traqon_auth_refresh";
+const AUTH_REFRESH_CHANNEL = "project_name_auth_refresh";
 
 let refreshPromise: Promise<boolean> | null = null;
 

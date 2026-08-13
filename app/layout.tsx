@@ -36,8 +36,8 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    template: "%s | Traqon",
-    default: "Traqon",
+    template: "%s | Dashboard",
+    default: "Dashboard",
   },
   description: "",
 };

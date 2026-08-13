@@ -3,7 +3,7 @@ import { AuditLogsTable } from "@/components/admin/AuditLogsTable";
 import { TableSkeleton } from "@/components/admin/TableSkeleton";
 
 export const metadata = {
-  title: "Audit Logs | Traqon Admin",
+  title: "Audit Logs | Admin",
   description: "View and inspect all admin action audit logs",
 };
 

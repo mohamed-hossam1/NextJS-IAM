@@ -23,7 +23,7 @@ export function AdminSidebar({
     <>
       <div className="flex h-16 items-center justify-between border-b border-foreground px-6">
         <Link href={ROUTES.ADMIN} className="font-serif-display italic text-xl">
-          Traqon Admin
+          Admin Console
         </Link>
         <button
           type="button"

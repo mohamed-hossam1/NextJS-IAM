@@ -1,17 +1,17 @@
 # Project Reference
 
 > **Last updated:** 2026-08-12 08:50  
-> **Project name:** Traqon (front-end)
+> **Project name:** project-name-frontend
 
 ---
 
 ## Project Overview
 
-A **Next.js 16 front-end application** that provides the complete user-facing interface for the Traqon platform. The application is a standalone SPA-style client (not a monorepo) that communicates with the NestJS back-end REST API via server actions and an Axios-based API client.
+A **Next.js 16 front-end application** that provides the complete user-facing interface for the authentication platform. The application is a standalone SPA-style client (not a monorepo) that communicates with the NestJS back-end REST API via server actions and an Axios-based API client.
 
 ### Business Domain
 
-User-facing authentication, profile management, session management, OAuth account linking, admin user management, admin role assignment, admin audit log monitoring — all backed by the Traqon NestJS API.
+User-facing authentication, profile management, session management, OAuth account linking, admin user management, admin role assignment, admin audit log monitoring — all backed by the NestJS API.
 
 ### Main Features
 
@@ -251,8 +251,8 @@ front-end/
 ### Multi-Tab Synchronization & Locking
 
 - **Web Locks API (`navigator.locks.request('auth-refresh')`):** Synchronizes token refresh across browser tabs so that only one tab calls `POST /api/auth/refresh` at a time.
-- **BroadcastChannel (`traqon_auth_refresh`):** Broadcasts token refresh success events to other active tabs so waiting requests reuse the freshly set access token.
-- **Revocation Broadcast (`traqon_auth_revocation`):** Broadcasts session revocation events to immediately clear query caches and redirect all open tabs to `/login`.
+- **BroadcastChannel (`project_name_auth_refresh`):** Broadcasts token refresh success events to other active tabs so waiting requests reuse the freshly set access token.
+- **Revocation Broadcast (`project_name_auth_revocation`):** Broadcasts session revocation events to immediately clear query caches and redirect all open tabs to `/login`.
 
 ---
 
