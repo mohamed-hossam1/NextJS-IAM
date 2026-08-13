@@ -12,6 +12,19 @@ function OAuthCallbackContent() {
   useEffect(() => {
     const error = searchParams.get("error");
     const status = searchParams.get("status");
+    const reason = searchParams.get("reason");
+
+    if (
+      error === "account_banned" ||
+      error === "user_banned" ||
+      error?.toLowerCase().includes("banned")
+    ) {
+      const targetUrl = reason
+        ? `${ROUTES.BANNED}?reason=${encodeURIComponent(reason)}`
+        : ROUTES.BANNED;
+      window.location.assign(targetUrl);
+      return;
+    }
 
     if (error === "google_email_mismatch") {
       toast.error("The Google account email must match your profile email.", {
